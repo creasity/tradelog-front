@@ -108,7 +108,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="R Moyen"
-          value={overview?.avg_r ? `${overview.avg_r > 0 ? '+' : ''}${overview.avg_r.toFixed(2)}R` : '—'}
+          value={overview?.avg_r ? `${Number(overview.avg_r) > 0 ? '+' : ''}${Number(overview.avg_r).toFixed(2)}R` : '—'}
           color={!overview?.avg_r ? 'default' : overview.avg_r >= 1 ? 'profit' : overview.avg_r > 0 ? 'warn' : 'loss'}
           subvalue="Ratio risque/récompense"
           loading={loading}
