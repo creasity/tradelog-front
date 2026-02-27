@@ -18,8 +18,8 @@ const NAV = [
 ]
 
 const PLAN_COLORS = {
-  free: 'text-gray-400',
-  pro: 'text-accent',
+  free: 'text-gray-500 dark:text-gray-400',
+  pro:  'text-accent',
   algo: 'text-profit',
 }
 
@@ -44,8 +44,8 @@ export default function Sidebar() {
             <span className={cn('text-xs font-mono uppercase tracking-widest font-semibold', PLAN_COLORS[user.plan])}>
               {user.plan}
             </span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className="text-xs text-gray-400 truncate max-w-[100px]">{user.email}</span>
+            <span className="text-gray-400 dark:text-gray-600">·</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[100px]">{user.email}</span>
           </div>
         )}
       </div>
@@ -65,12 +65,12 @@ export default function Sidebar() {
                   ? 'bg-accent/10 text-accent hover:bg-accent/20 mt-2'
                   : active
                   ? 'bg-light-hover dark:bg-dark-hover text-gray-900 dark:text-white'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-light-hover dark:hover:bg-dark-hover'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-light-hover dark:hover:bg-dark-hover'
               )}
             >
               <Icon size={16} className={cn(
                 'flex-shrink-0',
-                isNew ? 'text-accent' : active ? 'text-accent' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                isNew ? 'text-accent' : active ? 'text-accent' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
               )} />
               {label}
             </Link>
@@ -82,7 +82,7 @@ export default function Sidebar() {
       <div className="px-3 pb-4 border-t border-light-border dark:border-dark-border pt-3">
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:text-loss hover:bg-loss/10 transition-all w-full font-body"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-loss hover:bg-loss/10 transition-all w-full font-body"
         >
           <LogOut size={16} />
           Déconnexion
