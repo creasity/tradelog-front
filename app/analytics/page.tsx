@@ -3,46 +3,53 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { analytics, accounts, Account } from '@/lib/api'
-import { formatPnL, formatPercent, cn, getPnLColor } from '@/lib/utils'
+import { formatPnL, cn, getPnLColor } from '@/lib/utils'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area
+  ResponsiveContainer, AreaChart, Area
 } from 'recharts'
 import { useTheme } from '@/contexts/ThemeContext'
 
-interface SymbolStat { symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }
+interface SymbolStat  { symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }
 interface SessionStat { session: string; trades: number; total_pnl: number; win_rate: number }
 interface MistakeStat { mistake: string; occurrences: number; total_pnl_impact: number }
 interface DrawdownPoint { date: string; cumulative_pnl: number; drawdown_pct: number }
 
 function ChartCard({ title, children, loading }: { title: string; children: React.ReactNode; loading?: boolean }) {
   return (
-    <div className="card p-5">
+    <div className="card p-4 md:p-5">
       <h3 className="font-display font-700 text-sm uppercase tracking-widest text-gray-900 dark:text-white mb-4">{title}</h3>
-      {loading ? <div className="skeleton h-48 rounded-lg" /> : children}
+      {loading ? <div className="skeleton h-44 rounded-lg" /> : children}
     </div>
   )
 }
 
 function CustomBar({ x, y, width, height, value }: any) {
-  const color = value >= 0 ? '#00d17a' : '#ff3b5c'
+  const color = Number(value) >= 0 ? '#00d17a' : '#ff3b5c'
   return <rect x={x} y={y} width={width} height={Math.abs(height)} fill={color} opacity={0.85} rx={2} />
 }
 
 export default function AnalyticsPage() {
   const { isDark } = useTheme()
-  const [accountList, setAccountList] = useState<Account[]>([])
+  const [accountList, setAccountList]     = useState<Account[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string>()
-  const [loading, setLoading] = useState(true)
-
-  const [bySymbol, setBySymbol] = useState<SymbolStat[]>([])
-  const [bySession, setBySession] = useState<SessionStat[]>([])
-  const [byMistakes, setByMistakes] = useState<MistakeStat[]>([])
-  const [drawdown, setDrawdown] = useState<{ data: DrawdownPoint[]; max: number }>({ data: [], max: 0 })
-  const [calendar, setCalendar] = useState<Array<{ date: string; pnl: number; trades_count: number }>>([])
+  const [loading, setLoading]             = useState(true)
+  const [bySymbol, setBySymbol]           = useState<SymbolStat[]>([])
+  const [bySession, setBySession]         = useState<SessionStat[]>([])
+  const [byMistakes, setByMistakes]       = useState<MistakeStat[]>([])
+  const [drawdown, setDrawdown]           = useState<{ data: DrawdownPoint[]; max: number }>({ data: [], max: 0 })
+  const [calendar, setCalendar]           = useState<Array<{ date: string; pnl: number; trades_count: number }>>([])
 
   const gridColor = isDark ? '#1e2028' : '#e5e5e0'
-  const textColor = isDark ? '#6b7280' : '#9ca3af'
+  const textColor = isDark ? '#6b7280' : '#777772'
+
+  const tooltipStyle = {
+    background: isDark ? '#161820' : '#fff',
+    border: `1px solid ${isDark ? '#1e2028' : '#e5e5e0'}`,
+    borderRadius: 8,
+    fontSize: 11,
+    fontFamily: 'JetBrains Mono',
+  }
 
   const load = async () => {
     setLoading(true)
@@ -63,13 +70,9 @@ export default function AnalyticsPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    accounts.list().then(d => setAccountList(d.accounts))
-  }, [])
-
+  useEffect(() => { accounts.list().then(d => setAccountList(d.accounts)) }, [])
   useEffect(() => { load() }, [selectedAccount])
 
-  // Build calendar grid
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth()
@@ -79,47 +82,42 @@ export default function AnalyticsPage() {
 
   return (
     <AppLayout title="Analytics" subtitle="Performance détaillée">
+
       {/* Account selector */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-4">
         <select
-          className="tl-select w-48"
+          className="tl-select w-full sm:w-48"
           value={selectedAccount || ''}
           onChange={e => setSelectedAccount(e.target.value || undefined)}
         >
           <option value="">Tous les comptes</option>
           {accountList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <span className="text-xs text-gray-400 font-mono">
-          {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-        </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* P&L par symbole */}
         <ChartCard title="P&L par Symbole" loading={loading}>
           {bySymbol.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm font-mono py-12">Pas de données</p>
+            <p className="text-center text-gray-500 text-sm font-mono py-10">Pas de données</p>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={bySymbol.slice(0, 8)} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={bySymbol.slice(0, 6)} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="symbol" tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={50} />
-                  <Tooltip
-                    formatter={(v: number) => [formatPnL(v), 'P&L']}
-                    contentStyle={{ background: isDark ? '#161820' : '#fff', border: `1px solid ${isDark ? '#1e2028' : '#e5e5e0'}`, borderRadius: 8, fontSize: 12, fontFamily: 'JetBrains Mono' }}
-                  />
+                  <XAxis dataKey="symbol" tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={45} />
+                  <Tooltip formatter={(v: any) => [formatPnL(v), 'P&L']} contentStyle={tooltipStyle} />
                   <Bar dataKey="total_pnl" shape={<CustomBar />} />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto">
+              <div className="mt-2 space-y-1 max-h-28 overflow-y-auto">
                 {bySymbol.map(s => (
                   <div key={s.symbol} className="flex items-center justify-between text-xs font-mono py-1 border-b border-light-border/50 dark:border-dark-border/50 last:border-0">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200 w-24">{s.symbol}</span>
-                    <span className="text-gray-400 w-12">{s.trades}T</span>
-                    <span className="text-gray-400 w-14">{s.win_rate}% WR</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 w-20 truncate">{s.symbol}</span>
+                    <span className="text-gray-500 w-8 text-center">{s.trades}T</span>
+                    <span className="text-gray-500 w-14 text-center">{Number(s.win_rate).toFixed(0)}%</span>
                     <span className={cn('font-semibold w-20 text-right', getPnLColor(s.total_pnl))}>{formatPnL(s.total_pnl)}</span>
                   </div>
                 ))}
@@ -128,30 +126,27 @@ export default function AnalyticsPage() {
           )}
         </ChartCard>
 
-        {/* P&L par Session */}
+        {/* P&L par session */}
         <ChartCard title="P&L par Session" loading={loading}>
           {bySession.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm font-mono py-12">Pas de données</p>
+            <p className="text-center text-gray-500 text-sm font-mono py-10">Pas de données</p>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={bySession} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="session" tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={50} />
-                  <Tooltip
-                    formatter={(v: number) => [formatPnL(v), 'P&L']}
-                    contentStyle={{ background: isDark ? '#161820' : '#fff', border: `1px solid ${isDark ? '#1e2028' : '#e5e5e0'}`, borderRadius: 8, fontSize: 12, fontFamily: 'JetBrains Mono' }}
-                  />
+                  <XAxis dataKey="session" tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={45} />
+                  <Tooltip formatter={(v: any) => [formatPnL(v), 'P&L']} contentStyle={tooltipStyle} />
                   <Bar dataKey="total_pnl" shape={<CustomBar />} />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {bySession.map(s => (
                   <div key={s.session} className="flex items-center justify-between text-xs font-mono py-1 border-b border-light-border/50 dark:border-dark-border/50 last:border-0">
                     <span className="font-semibold text-gray-800 dark:text-gray-200 capitalize w-20">{s.session}</span>
-                    <span className="text-gray-400 w-12">{s.trades}T</span>
-                    <span className="text-gray-400 w-14">{s.win_rate}% WR</span>
+                    <span className="text-gray-500 w-8 text-center">{s.trades}T</span>
+                    <span className="text-gray-500 w-14 text-center">{Number(s.win_rate).toFixed(0)}%</span>
                     <span className={cn('font-semibold w-20 text-right', getPnLColor(s.total_pnl))}>{formatPnL(s.total_pnl)}</span>
                   </div>
                 ))}
@@ -161,11 +156,11 @@ export default function AnalyticsPage() {
         </ChartCard>
 
         {/* Drawdown */}
-        <ChartCard title={`Drawdown ${drawdown.max ? `(Max: ${drawdown.max.toFixed(2)}%)` : ''}`} loading={loading}>
+        <ChartCard title={`Drawdown${drawdown.max ? ` — Max ${Number(drawdown.max).toFixed(2)}%` : ''}`} loading={loading}>
           {drawdown.data.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm font-mono py-12">Pas de données</p>
+            <p className="text-center text-gray-500 text-sm font-mono py-10">Pas de données</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={drawdown.data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
@@ -174,33 +169,30 @@ export default function AnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 10, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={45} />
-                <Tooltip
-                  formatter={(v: number) => [`${v.toFixed(2)}%`, 'Drawdown']}
-                  contentStyle={{ background: isDark ? '#161820' : '#fff', border: `1px solid ${isDark ? '#1e2028' : '#e5e5e0'}`, borderRadius: 8, fontSize: 12, fontFamily: 'JetBrains Mono' }}
-                />
+                <XAxis dataKey="date" tick={{ fontSize: 8, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 9, fontFamily: 'JetBrains Mono', fill: textColor }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip formatter={(v: any) => [`${Number(v).toFixed(2)}%`, 'Drawdown']} contentStyle={tooltipStyle} />
                 <Area type="monotone" dataKey="drawdown_pct" stroke="#ff3b5c" strokeWidth={1.5} fill="url(#ddGrad)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
 
-        {/* Erreurs récurrentes */}
+        {/* Erreurs */}
         <ChartCard title="Erreurs Récurrentes" loading={loading}>
           {byMistakes.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-profit text-sm font-mono">✓ Aucune erreur identifiée</p>
-              <p className="text-xs text-gray-400 mt-1">Continue comme ça !</p>
+            <div className="py-10 text-center">
+              <p className="text-profit text-sm font-mono">✓ Aucune erreur</p>
+              <p className="text-xs text-gray-500 mt-1">Continue comme ça !</p>
             </div>
           ) : (
-            <div className="space-y-2.5 max-h-[260px] overflow-y-auto">
+            <div className="space-y-3 max-h-[200px] overflow-y-auto">
               {byMistakes.map(m => (
                 <div key={m.mistake} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate">{m.mistake}</span>
-                      <span className="text-xs font-mono text-gray-400 ml-2 flex-shrink-0">{m.occurrences}x</span>
+                      <span className="text-xs font-mono text-gray-500 ml-2 flex-shrink-0">{m.occurrences}x</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-light-border dark:bg-dark-border overflow-hidden">
                       <div
@@ -218,55 +210,48 @@ export default function AnalyticsPage() {
           )}
         </ChartCard>
 
-        {/* P&L Calendar */}
-        <div className="card p-5 lg:col-span-2">
+        {/* Calendrier P&L — pleine largeur */}
+        <div className="card p-4 md:p-5 md:col-span-2">
           <h3 className="font-display font-700 text-sm uppercase tracking-widest text-gray-900 dark:text-white mb-4">
-            Calendrier P&L — {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+            Calendrier — {now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
           </h3>
-          {loading ? <div className="skeleton h-40 rounded-lg" /> : (
-            <div>
-              {/* Day headers */}
+          {loading ? <div className="skeleton h-36 rounded-lg" /> : (
+            <>
               <div className="grid grid-cols-7 gap-1 mb-1">
-                {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(d => (
-                  <div key={d} className="text-center text-[10px] font-mono text-gray-400 py-1">{d}</div>
+                {['D','L','M','M','J','V','S'].map((d, i) => (
+                  <div key={i} className="text-center text-[10px] font-mono text-gray-500 py-0.5">{d}</div>
                 ))}
               </div>
-              {/* Days grid */}
               <div className="grid grid-cols-7 gap-1">
-                {/* Empty cells before first day */}
-                {Array.from({ length: firstDay }).map((_, i) => (
-                  <div key={`e-${i}`} />
-                ))}
+                {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1
-                  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
                   const data = calMap[dateStr]
                   const isToday = day === now.getDate()
                   return (
                     <div
                       key={day}
+                      title={data ? `${data.trades_count} trades | ${formatPnL(data.pnl)}` : ''}
                       className={cn(
-                        'rounded-md aspect-square flex flex-col items-center justify-center text-xs relative',
+                        'rounded aspect-square flex flex-col items-center justify-center text-[10px] md:text-xs',
                         data
-                          ? data.pnl > 0
-                            ? 'bg-profit/20 text-profit'
-                            : 'bg-loss/20 text-loss'
-                          : 'bg-light-hover dark:bg-dark-hover text-gray-400',
+                          ? Number(data.pnl) > 0 ? 'bg-profit/20 text-profit' : 'bg-loss/20 text-loss'
+                          : 'bg-light-hover dark:bg-dark-hover text-gray-500 dark:text-gray-400',
                         isToday && 'ring-1 ring-accent'
                       )}
-                      title={data ? `${data.trades_count} trades | P&L: ${formatPnL(data.pnl)}` : ''}
                     >
-                      <span className="font-mono text-[10px] leading-none">{day}</span>
+                      <span className="font-mono leading-none">{day}</span>
                       {data && (
-                        <span className="font-mono text-[9px] leading-none mt-0.5 font-semibold">
-                          {data.pnl >= 0 ? '+' : ''}{data.pnl.toFixed(0)}
+                        <span className="font-mono leading-none mt-0.5 font-semibold hidden sm:block">
+                          {Number(data.pnl) >= 0 ? '+' : ''}{Number(data.pnl).toFixed(0)}
                         </span>
                       )}
                     </div>
                   )
                 })}
               </div>
-            </div>
+            </>
           )}
         </div>
 

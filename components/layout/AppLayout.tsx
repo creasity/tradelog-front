@@ -17,9 +17,7 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/login')
-    }
+    if (!loading && !user) router.push('/auth/login')
   }, [loading, user, router])
 
   if (loading) {
@@ -27,7 +25,7 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
       <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-mono text-gray-400 tracking-widest uppercase">Chargement...</span>
+          <span className="text-xs font-mono text-gray-500 tracking-widest uppercase">Chargement...</span>
         </div>
       </div>
     )
@@ -38,9 +36,10 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
       <Sidebar />
-      <div className="ml-56 min-h-screen flex flex-col">
+      {/* Desktop: offset left by sidebar width. Mobile: offset top by topbar height */}
+      <div className="md:ml-56 pt-14 md:pt-0 min-h-screen flex flex-col">
         <Topbar title={title} subtitle={subtitle} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6">
           {children}
         </main>
       </div>
