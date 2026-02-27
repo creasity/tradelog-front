@@ -50,7 +50,7 @@ export default function StatCard({
       <span className="tl-label">{label}</span>
       <div className="flex items-end gap-2 mt-1">
         <span className={cn(
-          'text-2xl font-semibold leading-none',
+          'text-lg sm:text-2xl font-semibold leading-none',
           mono ? 'font-mono' : 'font-display',
           colorMap[color]
         )}>
