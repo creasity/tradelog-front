@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --profit: #00d17a;
+    --loss: #ff3b5c;
+    --accent: #4f8ef7;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2d36; border-radius: 3px; }
+  .dark ::-webkit-scrollbar-thumb { background: #2a2d36; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3d46; }
+
+  /* Selection */
+  ::selection {
+    background: #4f8ef730;
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply card p-5 flex flex-col gap-1;
+  }
+
+  /* Table */
+  .tl-table {
+    @apply w-full text-sm;
+  }
+  .tl-table th {
+    @apply text-xs font-mono uppercase tracking-widest text-gray-400 dark:text-gray-500 py-3 px-4 text-left border-b border-light-border dark:border-dark-border;
+  }
+  .tl-table td {
+    @apply py-3 px-4 border-b border-light-border/50 dark:border-dark-border/50;
+  }
+  .tl-table tr:hover td {
+    @apply bg-light-hover dark:bg-dark-hover;
+  }
+  .tl-table tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* Input */
+  .tl-input {
+    @apply w-full bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent dark:focus:border-accent transition-colors placeholder:text-gray-400;
+  }
+
+  /* Select */
+  .tl-select {
+    @apply tl-input appearance-none cursor-pointer;
+  }
+
+  /* Label */
+  .tl-label {
+    @apply text-xs font-mono uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5 block;
+  }
+
+  /* Button primary */
+  .btn-primary {
+    @apply bg-accent hover:bg-accent/90 text-white font-display font-semibold tracking-wide px-5 py-2.5 rounded-lg transition-all text-sm uppercase;
+  }
+
+  /* Button secondary */
+  .btn-secondary {
+    @apply bg-light-surface dark:bg-dark-surface hover:bg-light-hover dark:hover:bg-dark-hover border border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300 font-display font-semibold tracking-wide px-5 py-2.5 rounded-lg transition-all text-sm uppercase;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-mono;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply bg-gradient-to-r from-light-border via-light-hover to-light-border dark:from-dark-border dark:via-dark-hover dark:to-dark-border bg-[length:200%_100%] animate-shimmer rounded;
+  }
+
+  /* Profit / Loss colored text */
+  .text-profit { color: var(--profit); }
+  .text-loss { color: var(--loss); }
+
+  /* Grid lines subtle */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, currentColor 1px, transparent 1px),
+      linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    background-size: 40px 40px;
+    @apply opacity-[0.03];
+  }
+}
+
+/* Recharts customization */
+.recharts-cartesian-grid line { stroke: #1e2028; }
+.dark .recharts-cartesian-grid line { stroke: #1e2028; }
+.recharts-tooltip-wrapper { outline: none !important; }
