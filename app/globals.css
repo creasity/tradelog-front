@@ -11,7 +11,10 @@
 
   * { box-sizing: border-box; }
 
+  /* Body color par défaut (light) */
   body { color: #1a1a1a; }
+  /* Body dark mode */
+  .dark body { color: #f3f4f6; }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -93,11 +96,13 @@
 .dark .recharts-cartesian-grid line { stroke: #1e2028; }
 .recharts-tooltip-wrapper { outline: none !important; }
 
-/* ── Light mode : forcer lisibilité sur tous les gris ── */
-:not(.dark) .text-gray-400 { color: #4a4a45 !important; }
-:not(.dark) .text-gray-500 { color: #3a3a35 !important; }
-:not(.dark) .text-gray-300 { color: #555550 !important; }
-:not(.dark) .text-gray-600 { color: #2a2a25 !important; }
-:not(.dark) .text-gray-700 { color: #1a1a15 !important; }
-:not(.dark) .text-gray-800 { color: #111110 !important; }
-:not(.dark) .text-gray-900 { color: #000000 !important; }
+/* ── Light mode : forcer lisibilité ──────────────────────────────
+   On cible html:not(.dark) pour ne PAS impacter le dark mode
+   (contrairement à :not(.dark) qui matchait body et ses enfants) */
+html:not(.dark) .text-gray-400 { color: #4a4a45 !important; }
+html:not(.dark) .text-gray-500 { color: #3a3a35 !important; }
+html:not(.dark) .text-gray-300 { color: #555550 !important; }
+html:not(.dark) .text-gray-600 { color: #2a2a25 !important; }
+html:not(.dark) .text-gray-700 { color: #1a1a15 !important; }
+html:not(.dark) .text-gray-800 { color: #111110 !important; }
+html:not(.dark) .text-gray-900 { color: #000000 !important; }
