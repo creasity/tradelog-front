@@ -14,7 +14,6 @@ module.exports = {
         body: ['Barlow', 'sans-serif'],
       },
       colors: {
-        // Dark theme
         dark: {
           bg:      '#0a0b0f',
           surface: '#111318',
@@ -22,15 +21,13 @@ module.exports = {
           border:  '#1e2028',
           hover:   '#1a1d26',
         },
-        // Light theme
         light: {
-          bg:      '#f5f5f0',
+          bg:      '#f0f0ea',
           surface: '#ffffff',
-          card:    '#fafaf8',
-          border:  '#e5e5e0',
-          hover:   '#f0f0ea',
+          card:    '#fafaf7',
+          border:  '#d8d8d2',
+          hover:   '#e8e8e2',
         },
-        // Accents
         profit: {
           DEFAULT: '#00d17a',
           dim:     '#00d17a20',
@@ -53,18 +50,17 @@ module.exports = {
       animation: {
         'fade-up':    'fadeUp 0.4s ease forwards',
         'fade-in':    'fadeIn 0.3s ease forwards',
-        'count-up':   'countUp 0.6s ease forwards',
         'pulse-slow': 'pulse 3s ease-in-out infinite',
         'shimmer':    'shimmer 1.5s ease-in-out infinite',
       },
       keyframes: {
         fadeUp: {
-          '0%':   { opacity: 0, transform: 'translateY(12px)' },
-          '100%': { opacity: 1, transform: 'translateY(0)' },
+          '0%':   { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         fadeIn: {
-          '0%':   { opacity: 0 },
-          '100%': { opacity: 1 },
+          '0%':   { opacity: '0' },
+          '100%': { opacity: '1' },
         },
         shimmer: {
           '0%':   { backgroundPosition: '-200% 0' },
