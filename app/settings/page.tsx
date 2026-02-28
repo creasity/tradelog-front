@@ -104,42 +104,69 @@ function AccountCard({
   onDelete: (id: string) => void
   onUpdate: () => void
 }) {
-  const [expanded,  setExpanded]  = useState(false)
-  const [testing,   setTesting]   = useState(false)
-  const [syncing,   setSyncing]   = useState(false)
+  const [expanded,   setExpanded]   = useState(false)
+  const [testing,    setTesting]    = useState(false)
+  const [syncing,    setSyncing]    = useState(false)
   const [testResult, setTestResult] = useState<SyncResult | null>(null)
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
+
+  // Edit info
+  const [editInfo,  setEditInfo]  = useState(false)
+  const [info, setInfo] = useState({
+    name:            account.name,
+    asset_class:     account.asset_class,
+    currency:        account.currency,
+    initial_balance: account.initial_balance ? String(account.initial_balance) : '',
+    notes:           account.notes || '',
+  })
+  const [savingInfo, setSavingInfo] = useState(false)
+
+  // Edit keys
   const [editKeys,  setEditKeys]  = useState(false)
-  const [keys, setKeys] = useState({ api_key: '', api_secret: '', api_passphrase: '', symbols: '', category: 'spot', sync_enabled: account.sync_enabled ?? false })
+  const [keys, setKeys] = useState({
+    api_key: '', api_secret: '', api_passphrase: '',
+    symbols: account.sync_config?.symbols || '',
+    category: account.sync_config?.category || 'spot',
+    sync_enabled: account.sync_enabled ?? false,
+  })
   const [savingKeys, setSavingKeys] = useState(false)
 
   const exchange = EXCHANGES.find(e => e.value === account.broker)
 
   const handleTest = async () => {
-    setTesting(true)
-    setTestResult(null)
+    setTesting(true); setTestResult(null)
     try {
       const data = await apiCall(`/accounts/${account.id}/sync/test`, 'POST')
       setTestResult({ ok: true, ...data })
     } catch (err: any) {
       setTestResult({ ok: false, error: err.message })
-    } finally {
-      setTesting(false)
-    }
+    } finally { setTesting(false) }
   }
 
   const handleSync = async () => {
-    setSyncing(true)
-    setSyncResult(null)
+    setSyncing(true); setSyncResult(null)
     try {
       const data = await apiCall(`/accounts/${account.id}/sync`, 'POST')
-      setSyncResult(data)
-      onUpdate()
+      setSyncResult(data); onUpdate()
     } catch (err: any) {
       setSyncResult({ error: err.message })
-    } finally {
-      setSyncing(false)
-    }
+    } finally { setSyncing(false) }
+  }
+
+  const handleSaveInfo = async () => {
+    setSavingInfo(true)
+    try {
+      await apiCall(`/accounts/${account.id}`, 'PATCH', {
+        name:            info.name,
+        asset_class:     info.asset_class,
+        currency:        info.currency,
+        initial_balance: info.initial_balance ? parseFloat(info.initial_balance) : undefined,
+        notes:           info.notes || null,
+      })
+      setEditInfo(false)
+      onUpdate()
+    } catch (err: any) { alert(err.message) }
+    finally { setSavingInfo(false) }
   }
 
   const handleSaveKeys = async () => {
@@ -148,22 +175,19 @@ function AccountCard({
       const payload: any = {
         sync_enabled: keys.sync_enabled,
         sync_config: {
-          symbols: keys.symbols || undefined,
+          symbols:  keys.symbols  || undefined,
           category: keys.category || undefined,
         },
       }
-      if (keys.api_key)    payload.api_key    = keys.api_key
-      if (keys.api_secret) payload.api_secret = keys.api_secret
+      if (keys.api_key)        payload.api_key        = keys.api_key
+      if (keys.api_secret)     payload.api_secret     = keys.api_secret
       if (keys.api_passphrase) payload.api_passphrase = keys.api_passphrase
       await apiCall(`/accounts/${account.id}`, 'PATCH', payload)
       setEditKeys(false)
-      setKeys(k => ({ ...k, api_key: '', api_secret: '', api_passphrase: '' }))
+      setKeys(k => ({ ...k, api_key: \'\', api_secret: \'\', api_passphrase: \'\' }))
       onUpdate()
-    } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setSavingKeys(false)
-    }
+    } catch (err: any) { alert(err.message) }
+    finally { setSavingKeys(false) }
   }
 
   return (
@@ -175,8 +199,8 @@ function AccountCard({
       >
         <div className="flex items-center gap-3">
           <div className={cn(
-            'w-2 h-2 rounded-full flex-shrink-0',
-            account.sync_enabled && account.has_api_key ? 'bg-profit animate-pulse-slow' : 'bg-gray-400'
+            \'w-2 h-2 rounded-full flex-shrink-0\',
+            account.sync_enabled && account.has_api_key ? \'bg-profit animate-pulse-slow\' : \'bg-gray-400\'
           )} />
           <div>
             <div className="flex items-center gap-2">
@@ -193,13 +217,10 @@ function AccountCard({
             </div>
           </div>
         </div>
-
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <div className="text-xs font-mono text-gray-500">{account.total_trades || 0} trades</div>
-            {account.has_api_key && (
-              <div className="text-[10px] font-mono text-profit">API connectée</div>
-            )}
+            {account.has_api_key && <div className="text-[10px] font-mono text-profit">API connectée</div>}
           </div>
           {expanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
         </div>
@@ -209,12 +230,12 @@ function AccountCard({
       {expanded && (
         <div className="border-t border-light-border dark:border-dark-border px-4 py-4 space-y-4 bg-light-hover/30 dark:bg-dark-hover/30">
 
-          {/* Stats row */}
+          {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: 'Trades', value: account.total_trades || 0 },
-              { label: 'P&L Total', value: formatPnL(account.total_pnl) },
-              { label: 'Ouverts', value: account.open_trades || 0 },
+              { label: \'Trades\',    value: account.total_trades || 0 },
+              { label: \'P&L Total\', value: formatPnL(account.total_pnl) },
+              { label: \'Ouverts\',   value: account.open_trades  || 0 },
             ].map(s => (
               <div key={s.label} className="bg-light-surface dark:bg-dark-surface rounded-lg p-3 text-center">
                 <div className="text-xs text-gray-500 font-mono mb-1">{s.label}</div>
@@ -223,181 +244,151 @@ function AccountCard({
             ))}
           </div>
 
-          {/* Exchange sync section */}
+          {/* ── Edit infos ────────────────────────────────── */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                Informations du compte
+              </span>
+              <button
+                onClick={() => { setEditInfo(!editInfo); setEditKeys(false) }}
+                className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
+              >
+                <Edit3 size={11} /> {editInfo ? \'Annuler\' : \'Modifier\'}
+              </button>
+            </div>
+
+            {editInfo ? (
+              <div className="bg-light-surface dark:bg-dark-surface rounded-xl p-4 space-y-3 border border-light-border dark:border-dark-border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="tl-label">Nom</label>
+                    <input className="tl-input w-full" value={info.name} onChange={e => setInfo(i => ({ ...i, name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="tl-label">Classe d\'actif</label>
+                    <select className="tl-select w-full" value={info.asset_class} onChange={e => setInfo(i => ({ ...i, asset_class: e.target.value }))}>
+                      {ASSET_CLASSES.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="tl-label">Devise</label>
+                    <select className="tl-select w-full" value={info.currency} onChange={e => setInfo(i => ({ ...i, currency: e.target.value }))}>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="tl-label">Solde initial</label>
+                    <input className="tl-input w-full" type="number" step="any" value={info.initial_balance} onChange={e => setInfo(i => ({ ...i, initial_balance: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="tl-label">Notes</label>
+                    <input className="tl-input w-full" value={info.notes} onChange={e => setInfo(i => ({ ...i, notes: e.target.value }))} />
+                  </div>
+                </div>
+                <button onClick={handleSaveInfo} disabled={savingInfo} className="btn-primary flex items-center gap-2 text-xs !py-2">
+                  {savingInfo ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={12} />}
+                  Enregistrer
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs font-mono text-gray-500 space-y-1 px-1">
+                {account.initial_balance && <div>Solde initial: <span className="text-gray-700 dark:text-gray-300">{account.initial_balance.toLocaleString()} {account.currency}</span></div>}
+                {account.notes && <div className="text-gray-400 italic">{account.notes}</div>}
+              </div>
+            )}
+          </div>
+
+          {/* ── Exchange sync ─────────────────────────────── */}
           {exchange && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-                  Synchronisation {exchange.label}
+                  Clés API {exchange.label}
                 </span>
                 <button
-                  onClick={() => setEditKeys(!editKeys)}
+                  onClick={() => { setEditKeys(!editKeys); setEditInfo(false) }}
                   className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
                 >
-                  <Key size={11} /> {editKeys ? 'Annuler' : account.has_api_key ? 'Modifier les clés' : 'Configurer les clés'}
+                  <Key size={11} /> {editKeys ? \'Annuler\' : account.has_api_key ? \'Modifier les clés\' : \'Ajouter les clés\'}
                 </button>
               </div>
 
-              {/* Edit keys form */}
               {editKeys && (
                 <div className="bg-light-surface dark:bg-dark-surface rounded-xl p-4 space-y-3 border border-light-border dark:border-dark-border">
                   <div className="flex items-start gap-2 text-xs text-gray-500 font-mono bg-accent/5 border border-accent/20 rounded-lg p-2.5">
                     <Shield size={12} className="text-accent mt-0.5 flex-shrink-0" />
-                    Clés chiffrées AES-256 en base. Permissions lecture seule suffisent.
+                    Clés chiffrées AES-256. Permissions lecture seule suffisent.
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="tl-label">API Key</label>
-                      <input
-                        className="tl-input font-mono text-xs"
-                        placeholder={account.has_api_key ? '••••••••••••• (inchangé si vide)' : 'Ta clé API'}
-                        value={keys.api_key}
-                        onChange={e => setKeys(k => ({ ...k, api_key: e.target.value }))}
-                      />
+                      <input className="tl-input font-mono text-xs w-full" placeholder={account.has_api_key ? \'••••• (inchangé si vide)\' : \'Ta clé API\'} value={keys.api_key} onChange={e => setKeys(k => ({ ...k, api_key: e.target.value }))} />
                     </div>
                     <div>
                       <label className="tl-label">API Secret</label>
-                      <input
-                        className="tl-input font-mono text-xs"
-                        type="password"
-                        placeholder={account.has_api_key ? '••••••••••••• (inchangé si vide)' : 'Ton secret'}
-                        value={keys.api_secret}
-                        onChange={e => setKeys(k => ({ ...k, api_secret: e.target.value }))}
-                      />
+                      <input className="tl-input font-mono text-xs w-full" type="password" placeholder={account.has_api_key ? \'••••• (inchangé si vide)\' : \'Ton secret\'} value={keys.api_secret} onChange={e => setKeys(k => ({ ...k, api_secret: e.target.value }))} />
                     </div>
                     {exchange.hasPassphrase && (
                       <div className="sm:col-span-2">
-                        <label className="tl-label">Passphrase (Bitget)</label>
-                        <input
-                          className="tl-input font-mono text-xs"
-                          type="password"
-                          placeholder="Ton passphrase Bitget"
-                          value={keys.api_passphrase}
-                          onChange={e => setKeys(k => ({ ...k, api_passphrase: e.target.value }))}
-                        />
+                        <label className="tl-label">Passphrase</label>
+                        <input className="tl-input font-mono text-xs w-full" type="password" placeholder="Ton passphrase" value={keys.api_passphrase} onChange={e => setKeys(k => ({ ...k, api_passphrase: e.target.value }))} />
                       </div>
                     )}
                     {exchange.categories ? (
                       <div>
-                        <label className="tl-label">Catégorie (Bybit)</label>
-                        <select className="tl-select" value={keys.category} onChange={e => setKeys(k => ({ ...k, category: e.target.value }))}>
+                        <label className="tl-label">Catégorie</label>
+                        <select className="tl-select w-full" value={keys.category} onChange={e => setKeys(k => ({ ...k, category: e.target.value }))}>
                           {exchange.categories.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </div>
                     ) : (
-                      <div>
-                        <label className="tl-label">Symboles à suivre</label>
-                        <input
-                          className="tl-input font-mono text-xs"
-                          placeholder="BTCUSDT,ETHUSDT,SOLUSDT"
-                          value={keys.symbols}
-                          onChange={e => setKeys(k => ({ ...k, symbols: e.target.value }))}
-                        />
-                        <p className="text-[10px] text-gray-500 font-mono mt-1">Séparés par des virgules</p>
+                      <div className="sm:col-span-2">
+                        <label className="tl-label">Symboles</label>
+                        <input className="tl-input font-mono text-xs w-full" placeholder="BTCUSDT,ETHUSDT" value={keys.symbols} onChange={e => setKeys(k => ({ ...k, symbols: e.target.value }))} />
                       </div>
                     )}
-                    <div className="sm:col-span-2 flex items-center gap-3">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <div
-                          className={cn(
-                            'w-9 h-5 rounded-full transition-colors relative',
-                            keys.sync_enabled ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                          )}
-                          onClick={() => setKeys(k => ({ ...k, sync_enabled: !k.sync_enabled }))}
-                        >
-                          <div className={cn(
-                            'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                            keys.sync_enabled ? 'translate-x-4' : 'translate-x-0.5'
-                          )} />
+                    <div className="sm:col-span-2">
+                      <label className="flex items-center gap-2 cursor-pointer w-fit">
+                        <div className={cn(\'w-9 h-5 rounded-full transition-colors relative\', keys.sync_enabled ? \'bg-accent\' : \'bg-gray-300 dark:bg-gray-600\')} onClick={() => setKeys(k => ({ ...k, sync_enabled: !k.sync_enabled }))}>
+                          <div className={cn(\'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform\', keys.sync_enabled ? \'translate-x-4\' : \'translate-x-0.5\')} />
                         </div>
-                        <span className="text-xs font-mono text-gray-600 dark:text-gray-400">
-                          Sync automatique (toutes les heures)
-                        </span>
+                        <span className="text-xs font-mono text-gray-600 dark:text-gray-400">Sync automatique (toutes les heures)</span>
                       </label>
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleSaveKeys}
-                    disabled={savingKeys}
-                    className="btn-primary flex items-center gap-2 text-xs !py-2"
-                  >
-                    {savingKeys
-                      ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      : <Check size={12} />
-                    }
+                  <button onClick={handleSaveKeys} disabled={savingKeys} className="btn-primary flex items-center gap-2 text-xs !py-2">
+                    {savingKeys ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check size={12} />}
                     Enregistrer
                   </button>
                 </div>
               )}
 
-              {/* Test + Sync buttons */}
               {account.has_api_key && !editKeys && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleTest}
-                    disabled={testing}
-                    className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3"
-                  >
-                    {testing
-                      ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                      : <Wifi size={13} />
-                    }
+                  <button onClick={handleTest} disabled={testing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
+                    {testing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Wifi size={13} />}
                     Tester la connexion
                   </button>
-
-                  <button
-                    onClick={handleSync}
-                    disabled={syncing}
-                    className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3"
-                  >
-                    {syncing
-                      ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                      : <RefreshCw size={13} />
-                    }
+                  <button onClick={handleSync} disabled={syncing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
+                    {syncing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <RefreshCw size={13} />}
                     Sync maintenant
                   </button>
-
-                  <span className={cn(
-                    'text-[10px] font-mono px-2 py-1 rounded-full',
-                    account.sync_enabled
-                      ? 'bg-profit/10 text-profit'
-                      : 'bg-gray-500/10 text-gray-500 dark:text-gray-400'
-                  )}>
-                    {account.sync_enabled ? '● AUTO ON' : '○ AUTO OFF'}
+                  <span className={cn(\'text-[10px] font-mono px-2 py-1 rounded-full\', account.sync_enabled ? \'bg-profit/10 text-profit\' : \'bg-gray-500/10 text-gray-500\')}>
+                    {account.sync_enabled ? \'● AUTO ON\' : \'○ AUTO OFF\'}
                   </span>
                 </div>
               )}
 
-              {/* Test result */}
               {testResult && (
-                <div className={cn(
-                  'flex items-start gap-2 text-xs font-mono px-3 py-2.5 rounded-lg',
-                  testResult.ok
-                    ? 'bg-profit/10 text-profit border border-profit/20'
-                    : 'bg-loss/10 text-loss border border-loss/20'
-                )}>
-                  {testResult.ok
-                    ? <><Check size={12} className="mt-0.5" /> Connexion {testResult.broker} OK</>
-                    : <><WifiOff size={12} className="mt-0.5 flex-shrink-0" /> {testResult.error}{testResult.detail && ` — ${testResult.detail}`}</>
-                  }
+                <div className={cn(\'flex items-start gap-2 text-xs font-mono px-3 py-2.5 rounded-lg\', testResult.ok ? \'bg-profit/10 text-profit border border-profit/20\' : \'bg-loss/10 text-loss border border-loss/20\')}>
+                  {testResult.ok ? <><Check size={12} className="mt-0.5" /> Connexion {testResult.broker} OK</> : <><WifiOff size={12} className="mt-0.5 flex-shrink-0" /> {testResult.error}{testResult.detail && ` — ${testResult.detail}`}</>}
                   <button onClick={() => setTestResult(null)} className="ml-auto opacity-50 hover:opacity-100"><X size={11} /></button>
                 </div>
               )}
-
-              {/* Sync result */}
               {syncResult && (
-                <div className={cn(
-                  'text-xs font-mono px-3 py-2.5 rounded-lg border',
-                  syncResult.error
-                    ? 'bg-loss/10 text-loss border-loss/20'
-                    : 'bg-profit/10 text-profit border-profit/20'
-                )}>
-                  {syncResult.error
-                    ? `❌ ${syncResult.error}`
-                    : `✓ ${syncResult.inserted} trades importés · ${syncResult.skipped} doublons ignorés`
-                  }
+                <div className={cn(\'text-xs font-mono px-3 py-2.5 rounded-lg border\', syncResult.error ? \'bg-loss/10 text-loss border-loss/20\' : \'bg-profit/10 text-profit border-profit/20\')}>
+                  {syncResult.error ? `❌ ${syncResult.error}` : `✓ ${syncResult.inserted} trades importés · ${syncResult.skipped} doublons ignorés`}
                   <button onClick={() => setSyncResult(null)} className="ml-2 opacity-50 hover:opacity-100"><X size={11} /></button>
                 </div>
               )}
@@ -406,10 +397,7 @@ function AccountCard({
 
           {/* Delete */}
           <div className="pt-2 border-t border-light-border dark:border-dark-border flex justify-end">
-            <button
-              onClick={() => onDelete(account.id)}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-loss transition-colors font-mono"
-            >
+            <button onClick={() => onDelete(account.id)} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-loss transition-colors font-mono">
               <Trash2 size={12} /> Supprimer ce compte
             </button>
           </div>
