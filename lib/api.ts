@@ -1,6 +1,20 @@
-import Cookies from 'js-cookie'
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tradelog-api.creasity.com/api/v1'
+
+// ── Token storage (localStorage) ─────────────────────────────────
+const storage = {
+  get: (key: string): string | null => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem(key)
+  },
+  set: (key: string, value: string) => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(key, value)
+  },
+  remove: (key: string) => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(key)
+  },
+}
 
 // ── Types ─────────────────────────────────────────────────────────
 export interface User {
@@ -27,6 +41,11 @@ export interface Account {
   total_pnl?: number
   open_trades?: number
   is_default?: boolean
+  last_sync_at?: string
+  sync_config?: { symbols?: string; category?: string }
+  notes?: string
+  is_active?: boolean
+  created_at?: string
 }
 
 export interface Trade {
@@ -91,11 +110,8 @@ export interface EquityPoint {
 }
 
 // ── Core fetch ────────────────────────────────────────────────────
-async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const token = Cookies.get('access_token')
+async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = storage.get('access_token')
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -106,17 +122,13 @@ async function apiFetch<T>(
     },
   })
 
-  // Token expired → refresh
   if (res.status === 401 && token) {
-    const refreshed = await refreshToken()
-    if (refreshed) {
-      return apiFetch<T>(path, options)
-    } else {
-      Cookies.remove('access_token')
-      Cookies.remove('refresh_token')
-      if (typeof window !== 'undefined') window.location.href = '/auth/login'
-      throw new Error('Session expirée')
-    }
+    const refreshed = await tryRefreshToken()
+    if (refreshed) return apiFetch<T>(path, options)
+    storage.remove('access_token')
+    storage.remove('refresh_token')
+    if (typeof window !== 'undefined') window.location.href = '/auth/login'
+    throw new Error('Session expirée')
   }
 
   if (!res.ok) {
@@ -127,10 +139,9 @@ async function apiFetch<T>(
   return res.json()
 }
 
-async function refreshToken(): Promise<boolean> {
-  const refresh = Cookies.get('refresh_token')
+async function tryRefreshToken(): Promise<boolean> {
+  const refresh = storage.get('refresh_token')
   if (!refresh) return false
-
   try {
     const res = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
@@ -139,12 +150,10 @@ async function refreshToken(): Promise<boolean> {
     })
     if (!res.ok) return false
     const data = await res.json()
-    Cookies.set('access_token', data.access_token, { expires: 1 })
-    Cookies.set('refresh_token', data.refresh_token, { expires: 30 })
+    storage.set('access_token', data.access_token)
+    storage.set('refresh_token', data.refresh_token)
     return true
-  } catch {
-    return false
-  }
+  } catch { return false }
 }
 
 // ── Auth ──────────────────────────────────────────────────────────
@@ -154,8 +163,8 @@ export const auth = {
       '/auth/login',
       { method: 'POST', body: JSON.stringify({ email, password }) }
     )
-    Cookies.set('access_token', data.access_token, { expires: 1 })
-    Cookies.set('refresh_token', data.refresh_token, { expires: 30 })
+    storage.set('access_token', data.access_token)
+    storage.set('refresh_token', data.refresh_token)
     return data
   },
 
@@ -164,8 +173,8 @@ export const auth = {
       '/auth/register',
       { method: 'POST', body: JSON.stringify({ email, password, first_name, last_name }) }
     )
-    Cookies.set('access_token', data.access_token, { expires: 1 })
-    Cookies.set('refresh_token', data.refresh_token, { expires: 30 })
+    storage.set('access_token', data.access_token)
+    storage.set('refresh_token', data.refresh_token)
     return data
   },
 
@@ -174,79 +183,51 @@ export const auth = {
   },
 
   logout() {
-    const refresh = Cookies.get('refresh_token')
+    const refresh = storage.get('refresh_token')
     if (refresh) {
       apiFetch('/auth/logout', {
         method: 'POST',
         body: JSON.stringify({ refresh_token: refresh }),
       }).catch(() => {})
     }
-    Cookies.remove('access_token')
-    Cookies.remove('refresh_token')
+    storage.remove('access_token')
+    storage.remove('refresh_token')
     window.location.href = '/auth/login'
   },
 
   isAuthenticated() {
-    return !!Cookies.get('access_token')
+    return !!storage.get('access_token')
   },
 }
 
 // ── Accounts ──────────────────────────────────────────────────────
 export const accounts = {
   list: () => apiFetch<{ accounts: Account[] }>('/accounts'),
-
   get: (id: string) => apiFetch<{ account: Account }>(`/accounts/${id}`),
-
   create: (data: Partial<Account> & { api_key?: string; api_secret?: string }) =>
-    apiFetch<{ account: Account }>('/accounts', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
+    apiFetch<{ account: Account }>('/accounts', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<Account>) =>
-    apiFetch<{ account: Account }>(`/accounts/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
+    apiFetch<{ account: Account }>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 }
 
 // ── Trades ────────────────────────────────────────────────────────
 export interface TradeFilters {
-  page?: number
-  limit?: number
-  status?: string
-  symbol?: string
-  side?: string
-  account_id?: string
-  date_from?: string
-  date_to?: string
-  sort?: string
-  order?: string
+  page?: number; limit?: number; status?: string; symbol?: string
+  side?: string; account_id?: string; date_from?: string; date_to?: string
+  sort?: string; order?: string
 }
 
 export const trades = {
   list: (filters: TradeFilters = {}) => {
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, String(v)) })
-    return apiFetch<{ trades: Trade[]; pagination: { total: number; page: number; limit: number; pages: number } }>(
-      `/trades?${params}`
-    )
+    return apiFetch<{ trades: Trade[]; pagination: { total: number; page: number; limit: number; pages: number } }>(`/trades?${params}`)
   },
-
   get: (id: string) => apiFetch<{ trade: Trade }>(`/trades/${id}`),
-
   create: (data: Partial<Trade>) =>
-    apiFetch<{ trade: Trade }>('/trades', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
+    apiFetch<{ trade: Trade }>('/trades', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<Trade>) =>
-    apiFetch<{ trade: Trade }>(`/trades/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
+    apiFetch<{ trade: Trade }>(`/trades/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) =>
     apiFetch<{ message: string }>(`/trades/${id}`, { method: 'DELETE' }),
 }
@@ -258,45 +239,19 @@ export const analytics = {
     if (account_id) params.set('account_id', account_id)
     return apiFetch<{ overview: Analytics; period: string }>(`/analytics/overview?${params}`)
   },
-
-  equityCurve: (account_id?: string) => {
-    const params = account_id ? `?account_id=${account_id}` : ''
-    return apiFetch<{ equity_curve: EquityPoint[] }>(`/analytics/equity-curve${params}`)
-  },
-
+  equityCurve: (account_id?: string) =>
+    apiFetch<{ equity_curve: EquityPoint[] }>(`/analytics/equity-curve${account_id ? `?account_id=${account_id}` : ''}`),
   calendar: (year: number, month: number, account_id?: string) => {
     const params = new URLSearchParams({ year: String(year), month: String(month) })
     if (account_id) params.set('account_id', account_id)
-    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number }> }>(
-      `/analytics/calendar?${params}`
-    )
+    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number }> }>(`/analytics/calendar?${params}`)
   },
-
-  bySymbol: (account_id?: string) => {
-    const params = account_id ? `?account_id=${account_id}` : ''
-    return apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }> }>(
-      `/analytics/by-symbol${params}`
-    )
-  },
-
-  bySession: (account_id?: string) => {
-    const params = account_id ? `?account_id=${account_id}` : ''
-    return apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(
-      `/analytics/by-session${params}`
-    )
-  },
-
-  byMistakes: (account_id?: string) => {
-    const params = account_id ? `?account_id=${account_id}` : ''
-    return apiFetch<{ by_mistakes: Array<{ mistake: string; occurrences: number; total_pnl_impact: number }> }>(
-      `/analytics/by-mistakes${params}`
-    )
-  },
-
-  drawdown: (account_id?: string) => {
-    const params = account_id ? `?account_id=${account_id}` : ''
-    return apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(
-      `/analytics/drawdown${params}`
-    )
-  },
+  bySymbol: (account_id?: string) =>
+    apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
+  bySession: (account_id?: string) =>
+    apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-session${account_id ? `?account_id=${account_id}` : ''}`),
+  byMistakes: (account_id?: string) =>
+    apiFetch<{ by_mistakes: Array<{ mistake: string; occurrences: number; total_pnl_impact: number }> }>(`/analytics/by-mistakes${account_id ? `?account_id=${account_id}` : ''}`),
+  drawdown: (account_id?: string) =>
+    apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`),
 }
