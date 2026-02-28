@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { cn, formatPnL, formatDate } from '@/lib/utils'
 import {
   Plus, Check, ChevronDown, ChevronUp,
-  Wifi, WifiOff, RefreshCw, Trash2,
+  Wifi, WifiOff, RefreshCw, Trash2, Edit3,
   Shield, Zap, Key, AlertCircle, X
 } from 'lucide-react'
 
