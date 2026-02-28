@@ -23,7 +23,8 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await auth.login(email, password)
-      router.push('/dashboard')
+      // window.location force un rechargement complet pour que le contexte Auth soit relu
+      window.location.href = '/dashboard' 
     } catch (err: any) {
       setError(err.message || 'Identifiants incorrects')
     } finally {
