@@ -184,7 +184,7 @@ function AccountCard({
       if (keys.api_passphrase) payload.api_passphrase = keys.api_passphrase
       await apiCall(`/accounts/${account.id}`, 'PATCH', payload)
       setEditKeys(false)
-      setKeys(k => ({ ...k, api_key: \'\', api_secret: \'\', api_passphrase: \'\' }))
+      setKeys(k => ({ ...k, api_key: '', api_secret: '', api_passphrase: '' }))
       onUpdate()
     } catch (err: any) { alert(err.message) }
     finally { setSavingKeys(false) }
@@ -199,8 +199,8 @@ function AccountCard({
       >
         <div className="flex items-center gap-3">
           <div className={cn(
-            \'w-2 h-2 rounded-full flex-shrink-0\',
-            account.sync_enabled && account.has_api_key ? \'bg-profit animate-pulse-slow\' : \'bg-gray-400\'
+            'w-2 h-2 rounded-full flex-shrink-0',
+            account.sync_enabled && account.has_api_key ? 'bg-profit animate-pulse-slow' : 'bg-gray-400'
           )} />
           <div>
             <div className="flex items-center gap-2">
@@ -233,9 +233,9 @@ function AccountCard({
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: \'Trades\',    value: account.total_trades || 0 },
-              { label: \'P&L Total\', value: formatPnL(account.total_pnl) },
-              { label: \'Ouverts\',   value: account.open_trades  || 0 },
+              { label: 'Trades',    value: account.total_trades || 0 },
+              { label: 'P&L Total', value: formatPnL(account.total_pnl) },
+              { label: 'Ouverts',   value: account.open_trades  || 0 },
             ].map(s => (
               <div key={s.label} className="bg-light-surface dark:bg-dark-surface rounded-lg p-3 text-center">
                 <div className="text-xs text-gray-500 font-mono mb-1">{s.label}</div>
@@ -254,7 +254,7 @@ function AccountCard({
                 onClick={() => { setEditInfo(!editInfo); setEditKeys(false) }}
                 className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
               >
-                <Edit3 size={11} /> {editInfo ? \'Annuler\' : \'Modifier\'}
+                <Edit3 size={11} /> {editInfo ? 'Annuler' : 'Modifier'}
               </button>
             </div>
 
@@ -266,7 +266,7 @@ function AccountCard({
                     <input className="tl-input w-full" value={info.name} onChange={e => setInfo(i => ({ ...i, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="tl-label">Classe d\'actif</label>
+                    <label className="tl-label">Classe d'actif</label>
                     <select className="tl-select w-full" value={info.asset_class} onChange={e => setInfo(i => ({ ...i, asset_class: e.target.value }))}>
                       {ASSET_CLASSES.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
@@ -310,7 +310,7 @@ function AccountCard({
                   onClick={() => { setEditKeys(!editKeys); setEditInfo(false) }}
                   className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
                 >
-                  <Key size={11} /> {editKeys ? \'Annuler\' : account.has_api_key ? \'Modifier les clés\' : \'Ajouter les clés\'}
+                  <Key size={11} /> {editKeys ? 'Annuler' : account.has_api_key ? 'Modifier les clés' : 'Ajouter les clés'}
                 </button>
               </div>
 
@@ -323,11 +323,11 @@ function AccountCard({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="tl-label">API Key</label>
-                      <input className="tl-input font-mono text-xs w-full" placeholder={account.has_api_key ? \'••••• (inchangé si vide)\' : \'Ta clé API\'} value={keys.api_key} onChange={e => setKeys(k => ({ ...k, api_key: e.target.value }))} />
+                      <input className="tl-input font-mono text-xs w-full" placeholder={account.has_api_key ? '••••• (inchangé si vide)' : 'Ta clé API'} value={keys.api_key} onChange={e => setKeys(k => ({ ...k, api_key: e.target.value }))} />
                     </div>
                     <div>
                       <label className="tl-label">API Secret</label>
-                      <input className="tl-input font-mono text-xs w-full" type="password" placeholder={account.has_api_key ? \'••••• (inchangé si vide)\' : \'Ton secret\'} value={keys.api_secret} onChange={e => setKeys(k => ({ ...k, api_secret: e.target.value }))} />
+                      <input className="tl-input font-mono text-xs w-full" type="password" placeholder={account.has_api_key ? '••••• (inchangé si vide)' : 'Ton secret'} value={keys.api_secret} onChange={e => setKeys(k => ({ ...k, api_secret: e.target.value }))} />
                     </div>
                     {exchange.hasPassphrase && (
                       <div className="sm:col-span-2">
@@ -350,8 +350,8 @@ function AccountCard({
                     )}
                     <div className="sm:col-span-2">
                       <label className="flex items-center gap-2 cursor-pointer w-fit">
-                        <div className={cn(\'w-9 h-5 rounded-full transition-colors relative\', keys.sync_enabled ? \'bg-accent\' : \'bg-gray-300 dark:bg-gray-600\')} onClick={() => setKeys(k => ({ ...k, sync_enabled: !k.sync_enabled }))}>
-                          <div className={cn(\'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform\', keys.sync_enabled ? \'translate-x-4\' : \'translate-x-0.5\')} />
+                        <div className={cn('w-9 h-5 rounded-full transition-colors relative', keys.sync_enabled ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600')} onClick={() => setKeys(k => ({ ...k, sync_enabled: !k.sync_enabled }))}>
+                          <div className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', keys.sync_enabled ? 'translate-x-4' : 'translate-x-0.5')} />
                         </div>
                         <span className="text-xs font-mono text-gray-600 dark:text-gray-400">Sync automatique (toutes les heures)</span>
                       </label>
@@ -374,20 +374,20 @@ function AccountCard({
                     {syncing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <RefreshCw size={13} />}
                     Sync maintenant
                   </button>
-                  <span className={cn(\'text-[10px] font-mono px-2 py-1 rounded-full\', account.sync_enabled ? \'bg-profit/10 text-profit\' : \'bg-gray-500/10 text-gray-500\')}>
-                    {account.sync_enabled ? \'● AUTO ON\' : \'○ AUTO OFF\'}
+                  <span className={cn('text-[10px] font-mono px-2 py-1 rounded-full', account.sync_enabled ? 'bg-profit/10 text-profit' : 'bg-gray-500/10 text-gray-500')}>
+                    {account.sync_enabled ? '● AUTO ON' : '○ AUTO OFF'}
                   </span>
                 </div>
               )}
 
               {testResult && (
-                <div className={cn(\'flex items-start gap-2 text-xs font-mono px-3 py-2.5 rounded-lg\', testResult.ok ? \'bg-profit/10 text-profit border border-profit/20\' : \'bg-loss/10 text-loss border border-loss/20\')}>
+                <div className={cn('flex items-start gap-2 text-xs font-mono px-3 py-2.5 rounded-lg', testResult.ok ? 'bg-profit/10 text-profit border border-profit/20' : 'bg-loss/10 text-loss border border-loss/20')}>
                   {testResult.ok ? <><Check size={12} className="mt-0.5" /> Connexion {testResult.broker} OK</> : <><WifiOff size={12} className="mt-0.5 flex-shrink-0" /> {testResult.error}{testResult.detail && ` — ${testResult.detail}`}</>}
                   <button onClick={() => setTestResult(null)} className="ml-auto opacity-50 hover:opacity-100"><X size={11} /></button>
                 </div>
               )}
               {syncResult && (
-                <div className={cn(\'text-xs font-mono px-3 py-2.5 rounded-lg border\', syncResult.error ? \'bg-loss/10 text-loss border-loss/20\' : \'bg-profit/10 text-profit border-profit/20\')}>
+                <div className={cn('text-xs font-mono px-3 py-2.5 rounded-lg border', syncResult.error ? 'bg-loss/10 text-loss border-loss/20' : 'bg-profit/10 text-profit border-profit/20')}>
                   {syncResult.error ? `❌ ${syncResult.error}` : `✓ ${syncResult.inserted} trades importés · ${syncResult.skipped} doublons ignorés`}
                   <button onClick={() => setSyncResult(null)} className="ml-2 opacity-50 hover:opacity-100"><X size={11} /></button>
                 </div>
