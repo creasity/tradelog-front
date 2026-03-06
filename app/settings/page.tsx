@@ -365,18 +365,29 @@ function AccountCard({
               )}
 
               {account.has_api_key && !editKeys && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button onClick={handleTest} disabled={testing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
-                    {testing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Wifi size={13} />}
-                    Tester la connexion
-                  </button>
-                  <button onClick={handleSync} disabled={syncing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
-                    {syncing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <RefreshCw size={13} />}
-                    Sync maintenant
-                  </button>
-                  <span className={cn('text-[10px] font-mono px-2 py-1 rounded-full', account.sync_enabled ? 'bg-profit/10 text-profit' : 'bg-gray-500/10 text-gray-500')}>
-                    {account.sync_enabled ? '● AUTO ON' : '○ AUTO OFF'}
-                  </span>
+                <div className="space-y-2">
+                  {/* Symboles sauvegardés */}
+                  {account.sync_config?.symbols && (
+                    <div className="text-xs font-mono text-gray-500 dark:text-gray-400 bg-light-hover dark:bg-dark-hover rounded-lg px-3 py-2">
+                      <span className="text-gray-400 uppercase tracking-widest text-[10px]">Symboles · </span>
+                      {account.sync_config.symbols.split(',').map(s => s.trim()).filter(Boolean).map(s => (
+                        <span key={s} className="inline-block bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 mb-1">{s}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={handleTest} disabled={testing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
+                      {testing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <Wifi size={13} />}
+                      Tester la connexion
+                    </button>
+                    <button onClick={handleSync} disabled={syncing} className="btn-secondary flex items-center gap-1.5 text-xs !py-1.5 !px-3">
+                      {syncing ? <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <RefreshCw size={13} />}
+                      Sync maintenant
+                    </button>
+                    <span className={cn('text-[10px] font-mono px-2 py-1 rounded-full', account.sync_enabled ? 'bg-profit/10 text-profit' : 'bg-gray-500/10 text-gray-500')}>
+                      {account.sync_enabled ? '● AUTO ON' : '○ AUTO OFF'}
+                    </span>
+                  </div>
                 </div>
               )}
 
