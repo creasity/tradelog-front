@@ -100,6 +100,15 @@ export default function ImportPage() {
   const [importing,   setImporting]   = useState(false)
   const [result,      setResult]      = useState<{ imported: number; skipped: number; errors: string[] } | null>(null)
 
+  // Load SheetJS for XLSX support
+  useEffect(() => {
+    if (!(window as any).XLSX) {
+      const script = document.createElement('script')
+      script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js'
+      document.head.appendChild(script)
+    }
+  }, [])
+
   useEffect(() => {
     accounts.list().then(d => {
       setAccountList(d.accounts)
@@ -108,21 +117,49 @@ export default function ImportPage() {
   }, [])
 
   const handleFile = (file: File) => {
-    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
-      alert('Fichier CSV requis (.csv)')
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
+      alert('Format non supporté. Utilise CSV, XLSX ou XLS.')
       return
     }
     setFileName(file.name)
     const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      const { headers, rows } = parseCSV(text)
-      setHeaders(headers)
-      setRows(rows)
-      setMapping(autoDetect(headers))
-      setStep(2)
+
+    if (ext === 'csv') {
+      reader.onload = (e) => {
+        const text = e.target?.result as string
+        const { headers, rows } = parseCSV(text)
+        setHeaders(headers)
+        setRows(rows)
+        setMapping(autoDetect(headers))
+        setStep(2)
+      }
+      reader.readAsText(file)
+    } else {
+      // XLSX / XLS — parse via SheetJS
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer)
+          const XLSX = (window as any).XLSX
+          if (!XLSX) { alert('Librairie XLSX non chargée. Réessaie dans un instant.'); return }
+          const wb   = XLSX.read(data, { type: 'array', cellDates: true, raw: false })
+          const ws   = wb.Sheets[wb.SheetNames[0]]
+          const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as string[][]
+          if (json.length < 2) { alert('Fichier vide ou non reconnu.'); return }
+          const headers = json[0].map(h => String(h || '').trim()).filter(Boolean)
+          const rows    = json.slice(1)
+            .map(row => headers.map((_, i) => String(row[i] ?? '').trim()))
+            .filter(row => row.some(cell => cell !== ''))
+          setHeaders(headers)
+          setRows(rows)
+          setMapping(autoDetect(headers))
+          setStep(2)
+        } catch (err: any) {
+          alert('Erreur lecture XLSX : ' + err.message)
+        }
+      }
+      reader.readAsArrayBuffer(file)
     }
-    reader.readAsText(file)
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -222,7 +259,7 @@ export default function ImportPage() {
   }
 
   return (
-    <AppLayout title="Import CSV" subtitle="Importe tes trades depuis un fichier CSV">
+    <AppLayout title="Import CSV / XLSX" subtitle="Importe tes trades depuis un fichier CSV ou Excel">
 
       {/* Steps indicator */}
       <div className="flex items-center gap-2 mb-6">
@@ -274,15 +311,15 @@ export default function ImportPage() {
           >
             <Upload size={32} className="mx-auto mb-3 text-gray-400" />
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Glisse ton fichier CSV ici
+              Glisse ton fichier CSV ou Excel ici
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">ou clique pour choisir</p>
-            <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">ou clique pour choisir · CSV, XLSX, XLS</p>
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,text/csv" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
           </div>
 
           {/* Tips */}
           <div className="mt-4 card p-4 text-xs font-mono text-gray-500 dark:text-gray-400 space-y-1">
-            <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Colonnes reconnues automatiquement :</p>
+            <p className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Formats supportés : CSV, XLSX, XLS — colonnes reconnues auto :</p>
             <p>symbol / pair · side / direction · price / entry_price</p>
             <p>qty / quantity / size · date / entry_time · exit_price</p>
             <p>fee / commission · pnl / profit · leverage · notes</p>
