@@ -4,9 +4,35 @@ import { useEffect, useState, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account, TradeFilters } from '@/lib/api'
 import { formatPnL, formatDate, formatDuration, getPnLColor, getSideBg, cn } from '@/lib/utils'
-import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X } from 'lucide-react'
+import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X, ChevronUp, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
+// ── Sortable column header ─────────────────────────────────────────────
+function SortTh({
+  label, field, current, order, onSort,
+}: {
+  label: string
+  field: string
+  current: string | undefined
+  order: string | undefined
+  onSort: (field: string) => void
+}) {
+  const active = current === field
+  return (
+    <th
+      className="cursor-pointer select-none hover:text-gray-900 dark:hover:text-white group"
+      onClick={() => onSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        <span className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
+          {active ? (order === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <ChevronDown size={12} className="opacity-30" />}
+        </span>
+      </span>
+    </th>
+  )
+}
 
 export default function TradesPage() {
   const router = useRouter()
@@ -39,6 +65,15 @@ export default function TradesPage() {
 
   const setFilter = (key: keyof TradeFilters, value: string | number | undefined) =>
     setFilters(f => ({ ...f, [key]: value || undefined, page: 1 }))
+
+  const handleSort = (field: string) => {
+    setFilters(f => ({
+      ...f,
+      sort: field,
+      order: f.sort === field && f.order === 'desc' ? 'asc' : 'desc',
+      page: 1,
+    }))
+  }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -172,14 +207,15 @@ export default function TradesPage() {
               <table className="tl-table">
                 <thead>
                   <tr>
-                    <th>Symbole</th>
+                    <SortTh label="Symbole"   field="symbol"     current={filters.sort} order={filters.order} onSort={handleSort} />
                     <th>Direction</th>
-                    <th>Entrée</th>
-                    <th>Sortie</th>
+                    <SortTh label="Entrée"    field="entry_price" current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <SortTh label="Sortie"    field="exit_price"  current={filters.sort} order={filters.order} onSort={handleSort} />
                     <th>Qté</th>
-                    <th>Durée</th>
-                    <th>P&L Net</th>
-                    <th>R</th>
+                    <SortTh label="Durée"     field="duration_seconds" current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <SortTh label="P&L Net"   field="net_pnl"    current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <SortTh label="R"         field="r_multiple" current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <SortTh label="Date"      field="entry_time" current={filters.sort} order={filters.order} onSort={handleSort} />
                     <th>Statut</th>
                     <th></th>
                   </tr>
@@ -200,13 +236,12 @@ export default function TradesPage() {
                       <td><span className={cn('badge', getSideBg(trade.side))}>{trade.side.toUpperCase()}</span></td>
                       <td>
                         <div className="font-mono text-sm">{Number(trade.entry_price).toLocaleString()}</div>
-                        <div className="text-xs text-gray-500 font-mono">{formatDate(trade.entry_time)}</div>
                       </td>
                       <td>
                         {trade.exit_price ? (
                           <>
                             <div className="font-mono text-sm">{Number(trade.exit_price).toLocaleString()}</div>
-                            <div className="text-xs text-gray-500 font-mono">{formatDate(trade.exit_time)}</div>
+                            {trade.exit_time && <div className="text-xs text-gray-500 font-mono">{formatDate(trade.exit_time)}</div>}
                           </>
                         ) : <span className="text-xs text-gray-400 font-mono">—</span>}
                       </td>
@@ -217,6 +252,7 @@ export default function TradesPage() {
                       <td><span className="font-mono text-xs text-gray-500">{formatDuration(trade.duration_seconds)}</span></td>
                       <td><span className={cn('font-mono font-semibold text-sm', getPnLColor(trade.net_pnl))}>{formatPnL(trade.net_pnl)}</span></td>
                       <td><span className={cn('font-mono text-sm', getPnLColor(trade.r_multiple))}>{trade.r_multiple ? `${Number(trade.r_multiple) > 0 ? '+' : ''}${Number(trade.r_multiple).toFixed(2)}R` : '—'}</span></td>
+                      <td><span className="font-mono text-xs text-gray-500">{formatDate(trade.entry_time)}</span></td>
                       <td>
                         <span className={cn('badge',
                           trade.status === 'open' ? 'bg-accent/10 text-accent' : 'bg-gray-500/10 text-gray-500 dark:text-gray-400'

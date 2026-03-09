@@ -256,11 +256,10 @@ export default function TradeDetailPage() {
     setSaving(true)
     try {
       const payload = { ...draft }
-      // Remove read-only fields
-      delete (payload as any).id
-      delete (payload as any).created_at
-      delete (payload as any).account_name
-      delete (payload as any).user_id
+      // Remove read-only and computed fields — backend rejects them
+      ;['id','created_at','updated_at','account_name','user_id',
+        'gross_pnl','net_pnl','pnl_percent','r_multiple','duration_seconds','ai_score',
+      ].forEach(k => delete (payload as any)[k])
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/trades/${id}`,
@@ -273,7 +272,10 @@ export default function TradeDetailPage() {
           body: JSON.stringify(payload),
         }
       )
-      if (!res.ok) throw new Error('Erreur sauvegarde')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || errData.message || `Erreur serveur ${res.status}`)
+      }
       const data = await res.json()
       setTrade(data.trade)
       setDraft(data.trade)
