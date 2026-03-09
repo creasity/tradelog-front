@@ -68,6 +68,37 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
   )
 }
 
+// Converts an ISO UTC string to a value usable in a datetime-local input (local time)
+function isoToLocalInput(iso: string | undefined): string {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return ''
+    const offset = d.getTimezoneOffset() * 60000
+    return new Date(d.getTime() - offset).toISOString().slice(0, 16)
+  } catch { return '' }
+}
+
+// Converts a datetime-local string (local time) back to an ISO UTC string
+function localInputToIso(local: string): string {
+  if (!local) return ''
+  try {
+    const d = new Date(local)
+    return d.toISOString()
+  } catch { return local }
+}
+
+// Normalize a numeric value for display: strip trailing zeros from DB DECIMAL strings
+// e.g. "71000.00000000" -> "71000", "72655.22000000" -> "72655.22"
+function normalizeNum(v: string | number | undefined): string {
+  if (v === undefined || v === null || v === '') return ''
+  const n = parseFloat(String(v))
+  if (isNaN(n)) return ''
+  // Use toPrecision to avoid scientific notation for large/small numbers, then strip trailing zeros
+  let s = String(n)
+  return s
+}
+
 function EditableField({
   label, value, type = 'text', options, onChange, suffix, hint,
 }: {
@@ -79,39 +110,96 @@ function EditableField({
   suffix?: string
   hint?: string
 }) {
-  return (
-    <div>
-      <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
-      {type === 'select' && options ? (
+  // For numbers: normalize the external value to strip DB trailing zeros
+  const normalize = (v: string | number | undefined) =>
+    type === 'number' ? normalizeNum(v) : 
+    type === 'datetime-local' ? isoToLocalInput(v as string) : 
+    String(v ?? '')
+
+  const [localVal, setLocalVal] = useState<string>(normalize(value))
+  // Track whether the field is currently focused
+  const focused = useRef(false)
+
+  // Sync external value changes (e.g. after save) only when not focused
+  useEffect(() => {
+    if (!focused.current) {
+      setLocalVal(normalize(value))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
+  if (type === 'select' && options) {
+    return (
+      <div>
+        <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
         <select className="tl-select w-full" value={value ?? ''} onChange={e => onChange(e.target.value)}>
           <option value="">—</option>
           {options.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
-      ) : type === 'textarea' ? (
+      </div>
+    )
+  }
+
+  if (type === 'textarea') {
+    return (
+      <div>
+        <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
         <textarea
           className="tl-input w-full resize-none min-h-[80px] text-sm"
           value={value ?? ''}
           onChange={e => onChange(e.target.value)}
           placeholder="..."
         />
-      ) : (
-        <div className="relative">
-          <input
-            className="tl-input w-full"
-            type={type}
-            step={type === 'number' ? 'any' : undefined}
-            value={value ?? ''}
-            onChange={e => onChange(e.target.value)}
-          />
-          {suffix && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">{suffix}</span>
-          )}
-        </div>
-      )}
+      </div>
+    )
+  }
+
+  if (type === 'datetime-local') {
+    return (
+      <div>
+        <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
+        <input
+          className="tl-input w-full"
+          type="datetime-local"
+          value={localVal}
+          onFocus={() => { focused.current = true }}
+          onChange={e => {
+            setLocalVal(e.target.value)
+            onChange(localInputToIso(e.target.value))
+          }}
+          onBlur={() => { focused.current = false }}
+        />
+      </div>
+    )
+  }
+
+  // text / number:
+  // - Use type="text" + inputMode to avoid browser's number-input quirks
+  //   (browser rejects "1." mid-typing, resets field on invalid intermediate values)
+  // - Only propagate to draft on blur so typing is never interrupted
+  return (
+    <div>
+      <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
+      <div className="relative">
+        <input
+          className="tl-input w-full"
+          type="text"
+          inputMode={type === 'number' ? 'decimal' : 'text'}
+          value={localVal}
+          onFocus={() => { focused.current = true }}
+          onChange={e => setLocalVal(e.target.value)}
+          onBlur={e => {
+            focused.current = false
+            onChange(e.target.value)
+          }}
+        />
+        {suffix && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">{suffix}</span>
+        )}
+      </div>
     </div>
   )
 }
-
 function TagSelector({
   label, icon, selected, presets, color, onChange,
 }: {
@@ -260,6 +348,17 @@ export default function TradeDetailPage() {
       ;['id','created_at','updated_at','account_name','user_id',
         'gross_pnl','net_pnl','pnl_percent','r_multiple','duration_seconds','ai_score',
       ].forEach(k => delete (payload as any)[k])
+
+      // Parse numeric fields — EditableField stores raw strings, backend needs numbers
+      ;['entry_price','exit_price','quantity','leverage','fees','stop_loss','take_profit','vwap','position_size'].forEach(k => {
+        const v = (payload as any)[k]
+        if (v === '' || v === undefined || v === null) {
+          ;(payload as any)[k] = undefined
+        } else if (typeof v === 'string') {
+          const n = parseFloat(v)
+          ;(payload as any)[k] = isNaN(n) ? undefined : n
+        }
+      })
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/trades/${id}`,
@@ -554,23 +653,24 @@ export default function TradeDetailPage() {
                 Exécution & Prix
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EditableField label="Prix d'entrée"  value={draft.entry_price} type="number" onChange={v => set('entry_price', parseFloat(v))} suffix="$" />
-                <EditableField label="Prix de sortie" hint="Laisser vide si trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v ? parseFloat(v) : undefined)} suffix="$" />
-                <EditableField label="Quantité"       value={draft.quantity}    type="number" onChange={v => set('quantity', parseFloat(v))} />
-                <EditableField label="Levier"         hint="1 = pas de levier" value={draft.leverage} type="number" onChange={v => set('leverage', v ? parseInt(v) : 1)} suffix="×" />
+                <EditableField label="Prix d'entrée"  value={draft.entry_price} type="number" onChange={v => set('entry_price', v)} suffix="$" />
+                <EditableField label="Prix de sortie" hint="Laisser vide si trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v || undefined)} suffix="$" />
+                <EditableField label="Quantité"       value={draft.quantity}    type="number" onChange={v => set('quantity', v)} />
+                <EditableField label="Levier"         hint="1 = pas de levier" value={draft.leverage} type="number" onChange={v => set('leverage', v || 1)} suffix="×" />
                 <EditableField
                   label="Date d'entrée"
-                  value={draft.entry_time ? new Date(draft.entry_time).toISOString().slice(0, 16) : ''}
+                  value={draft.entry_time}
                   type="datetime-local"
-                  onChange={v => set('entry_time', new Date(v).toISOString())}
+                  onChange={v => set('entry_time', v || undefined)}
                 />
                 <EditableField
                   label="Date de sortie"
-                  value={draft.exit_time ? new Date(draft.exit_time).toISOString().slice(0, 16) : ''}
+                  hint="Laisser vide si trade ouvert"
+                  value={draft.exit_time}
                   type="datetime-local"
-                  onChange={v => set('exit_time', v ? new Date(v).toISOString() : undefined)}
+                  onChange={v => set('exit_time', v || undefined)}
                 />
-                <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v ? parseFloat(v) : 0)} suffix="$" />
+                <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v || 0)} suffix="$" />
                 <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
                 <div className="sm:col-span-2">
                   <label className="tl-label">Montant de position</label>
@@ -599,7 +699,7 @@ export default function TradeDetailPage() {
                     )}
                   </div>
                 </div>
-                <EditableField label="VWAP" value={(draft as any).vwap} type="number" onChange={v => set('vwap', v ? parseFloat(v) : undefined)} suffix="$" />
+                <EditableField label="VWAP" value={(draft as any).vwap} type="number" onChange={v => set('vwap', v || undefined)} suffix="$" />
               </div>
             </div>
 
@@ -609,8 +709,8 @@ export default function TradeDetailPage() {
                 Gestion du Risque
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EditableField label="Stop Loss"    value={draft.stop_loss}   type="number" onChange={v => set('stop_loss',   v ? parseFloat(v) : undefined)} suffix="$" />
-                <EditableField label="Take Profit"  value={draft.take_profit} type="number" onChange={v => set('take_profit', v ? parseFloat(v) : undefined)} suffix="$" />
+                <EditableField label="Stop Loss"    value={draft.stop_loss}   type="number" onChange={v => set('stop_loss', v || undefined)} suffix="$" />
+                <EditableField label="Take Profit"  value={draft.take_profit} type="number" onChange={v => set('take_profit', v || undefined)} suffix="$" />
               </div>
             </div>
 
