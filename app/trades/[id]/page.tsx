@@ -162,7 +162,7 @@ function QtyAmountRow({
             type="text"
             inputMode="decimal"
             value={amountVal}
-            placeholder={entryPrice ? 'auto depuis Quantité' : 'Entrer le prix d'entrée d'abord'}
+            placeholder={entryPrice ? 'auto depuis Quantité' : "Entrer le prix d'entrée d'abord"}
             onChange={e => setAmountVal(e.target.value)}
             onBlur={e => handleAmountBlur(e.target.value)}
           />

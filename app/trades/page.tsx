@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account, TradeFilters } from '@/lib/api'
 import { formatPnL, formatDate, formatDuration, getPnLColor, getSideBg, cn } from '@/lib/utils'
-import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X } from 'lucide-react'
+import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X, CheckSquare, Square } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -49,6 +49,31 @@ export default function TradesPage() {
     try { await trades.delete(id); load() }
     catch (err: any) { alert(err.message) }
     finally { setDeleting(null) }
+  }
+
+  const allIds = tradeList.map(t => t.id)
+  const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id))
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds))
+
+  const handleDeleteSelected = async () => {
+    if (!selected.size) return
+    if (!confirm(`Supprimer ${selected.size} trade(s) sélectionné(s) ?`)) return
+    setDeletingBulk(true)
+    try {
+      await Promise.all([...selected].map(id => trades.delete(id)))
+      setSelected(new Set())
+      load()
+    } catch (err: any) { alert(err.message) }
+    finally { setDeletingBulk(false) }
   }
 
   const totalPnL = tradeList.reduce((s, t) => s + Number(t.net_pnl || 0), 0)
@@ -195,6 +220,11 @@ export default function TradesPage() {
               <table className="tl-table">
                 <thead>
                   <tr>
+                    <th className="w-8 pr-0">
+                      <button onClick={toggleAll} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center">
+                        {allSelected ? <CheckSquare size={15} className="text-accent" /> : <Square size={15} />}
+                      </button>
+                    </th>
                     <th>Symbole</th>
                     <th>Direction</th>
                     <th>Entrée</th>
