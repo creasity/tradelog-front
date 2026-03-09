@@ -470,7 +470,7 @@ export default function TradeDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
             <StatPill label="Entrée"   value={`$${toNum(draft.entry_price).toLocaleString()}`} />
             <StatPill label="Sortie"   value={draft.exit_price ? `$${toNum(draft.exit_price).toLocaleString()}` : '—'} />
-            <StatPill label="Position" value={draft.entry_price && draft.quantity ? `$${(toNum(draft.entry_price) * toNum(draft.quantity)).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'} />
+            <StatPill label="Quantité" value={`${draft.quantity}${draft.leverage && draft.leverage > 1 ? ` · ×${draft.leverage}` : ''}`} />
             <StatPill label="Frais"    value={draft.fees ? formatPnL(-toNum(draft.fees)) : '—'} />
           </div>
         </div>
