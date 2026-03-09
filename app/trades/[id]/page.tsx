@@ -6,7 +6,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account } from '@/lib/api'
 import { cn, formatPnL, formatDate, formatDuration, getPnLColor, toNum } from '@/lib/utils'
 import {
-  ArrowLeft, Edit3, Check, X, Trash2, Star,
+  ArrowLeft, Edit3, Check, X, Trash2, Star, Copy,
   TrendingUp, TrendingDown, Clock, Layers,
   Tag, AlertTriangle, FileText, Image, Plus,
   ChevronRight, Zap,
@@ -507,6 +507,25 @@ export default function TradeDetailPage() {
     }
   }
 
+  const handleDuplicate = async () => {
+    if (!trade) return
+    if (!confirm('Dupliquer ce trade ? Un nouveau trade identique sera créé avec la date d\'aujourd\'hui.')) return
+    try {
+      const { id, created_at, updated_at, gross_pnl, net_pnl, pnl_percent, r_multiple, duration_seconds, ai_score, account_name, ...rest } = trade as any
+      const payload = {
+        ...rest,
+        entry_time: new Date().toISOString(),
+        exit_time: undefined,
+        exit_price: undefined,
+        status: 'open',
+        source: 'manual',
+        notes: rest.notes ? `[Dupliqué] ${rest.notes}` : '[Dupliqué]',
+      }
+      const data = await trades.create(payload)
+      router.push(`/trades/${data.trade.id}`)
+    } catch (err: any) { alert(err.message) }
+  }
+
   const handleScreenshot = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     files.forEach(file => {
@@ -583,6 +602,12 @@ export default function TradeDetailPage() {
                 <Check size={10} /> Sauvegardé
               </span>
             )}
+            <button
+              onClick={handleDuplicate}
+              className="btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1.5 hover:text-accent hover:border-accent/50 transition-colors"
+            >
+              <Copy size={12} /> Dupliquer
+            </button>
             <button
               onClick={handleDelete}
               disabled={deleting}

@@ -4,35 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account, TradeFilters } from '@/lib/api'
 import { formatPnL, formatDate, formatDuration, getPnLColor, getSideBg, cn } from '@/lib/utils'
-import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Plus, ChevronLeft, ChevronRight, Trash2, Filter, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-
-// ── Sortable column header ─────────────────────────────────────────────
-function SortTh({
-  label, field, current, order, onSort,
-}: {
-  label: string
-  field: string
-  current: string | undefined
-  order: string | undefined
-  onSort: (field: string) => void
-}) {
-  const active = current === field
-  return (
-    <th
-      className="cursor-pointer select-none hover:text-gray-900 dark:hover:text-white group"
-      onClick={() => onSort(field)}
-    >
-      <span className="flex items-center gap-1">
-        {label}
-        <span className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
-          {active ? (order === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <ChevronDown size={12} className="opacity-30" />}
-        </span>
-      </span>
-    </th>
-  )
-}
 
 export default function TradesPage() {
   const router = useRouter()
@@ -42,6 +16,8 @@ export default function TradesPage() {
   const [loading, setLoading]         = useState(true)
   const [deleting, setDeleting]       = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [deletingBulk, setDeletingBulk] = useState(false)
 
   const [filters, setFilters] = useState<TradeFilters>({
     page: 1, limit: 20, sort: 'entry_time', order: 'desc',
@@ -61,19 +37,10 @@ export default function TradesPage() {
     accounts.list().then(d => setAccountList(d.accounts)).catch(() => {})
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); setSelected(new Set()) }, [load])
 
   const setFilter = (key: keyof TradeFilters, value: string | number | undefined) =>
     setFilters(f => ({ ...f, [key]: value || undefined, page: 1 }))
-
-  const handleSort = (field: string) => {
-    setFilters(f => ({
-      ...f,
-      sort: field,
-      order: f.sort === field && f.order === 'desc' ? 'asc' : 'desc',
-      page: 1,
-    }))
-  }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -187,6 +154,27 @@ export default function TradesPage() {
         </div>
       )}
 
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between px-4 py-2.5 bg-accent/10 border border-accent/30 rounded-lg mb-3 text-sm font-mono">
+          <span className="text-accent font-semibold">{selected.size} trade{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-white">
+              Désélectionner tout
+            </button>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={deletingBulk}
+              className="flex items-center gap-1.5 text-xs text-loss hover:bg-loss/10 px-3 py-1.5 rounded-lg transition-all border border-loss/30"
+            >
+              {deletingBulk ? <span className="w-3 h-3 border-2 border-loss border-t-transparent rounded-full animate-spin" /> : <Trash2 size={13} />}
+              Supprimer la sélection
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="card p-4 space-y-3">
@@ -207,22 +195,26 @@ export default function TradesPage() {
               <table className="tl-table">
                 <thead>
                   <tr>
-                    <SortTh label="Symbole"   field="symbol"     current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <th>Symbole</th>
                     <th>Direction</th>
-                    <SortTh label="Entrée"    field="entry_price" current={filters.sort} order={filters.order} onSort={handleSort} />
-                    <SortTh label="Sortie"    field="exit_price"  current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <th>Entrée</th>
+                    <th>Sortie</th>
                     <th>Qté</th>
-                    <SortTh label="Durée"     field="duration_seconds" current={filters.sort} order={filters.order} onSort={handleSort} />
-                    <SortTh label="P&L Net"   field="net_pnl"    current={filters.sort} order={filters.order} onSort={handleSort} />
-                    <SortTh label="R"         field="r_multiple" current={filters.sort} order={filters.order} onSort={handleSort} />
-                    <SortTh label="Date"      field="entry_time" current={filters.sort} order={filters.order} onSort={handleSort} />
+                    <th>Durée</th>
+                    <th>P&L Net</th>
+                    <th>R</th>
                     <th>Statut</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {tradeList.map(trade => (
-                    <tr key={trade.id} className="cursor-pointer" onClick={() => router.push(`/trades/${trade.id}`)}>
+                    <tr key={trade.id} className={cn('cursor-pointer', selected.has(trade.id) && 'bg-accent/5')} onClick={() => router.push(`/trades/${trade.id}`)}>
+                      <td className="pr-0" onClick={e => { e.stopPropagation(); toggleSelect(trade.id) }}>
+                        <button className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                          {selected.has(trade.id) ? <CheckSquare size={15} className="text-accent" /> : <Square size={15} />}
+                        </button>
+                      </td>
                       <td>
                         <div className="font-mono font-semibold text-sm text-gray-900 dark:text-white">{trade.symbol}</div>
                         {trade.setup_tags?.length ? (
@@ -236,12 +228,13 @@ export default function TradesPage() {
                       <td><span className={cn('badge', getSideBg(trade.side))}>{trade.side.toUpperCase()}</span></td>
                       <td>
                         <div className="font-mono text-sm">{Number(trade.entry_price).toLocaleString()}</div>
+                        <div className="text-xs text-gray-500 font-mono">{formatDate(trade.entry_time)}</div>
                       </td>
                       <td>
                         {trade.exit_price ? (
                           <>
                             <div className="font-mono text-sm">{Number(trade.exit_price).toLocaleString()}</div>
-                            {trade.exit_time && <div className="text-xs text-gray-500 font-mono">{formatDate(trade.exit_time)}</div>}
+                            <div className="text-xs text-gray-500 font-mono">{formatDate(trade.exit_time)}</div>
                           </>
                         ) : <span className="text-xs text-gray-400 font-mono">—</span>}
                       </td>
@@ -252,7 +245,6 @@ export default function TradesPage() {
                       <td><span className="font-mono text-xs text-gray-500">{formatDuration(trade.duration_seconds)}</span></td>
                       <td><span className={cn('font-mono font-semibold text-sm', getPnLColor(trade.net_pnl))}>{formatPnL(trade.net_pnl)}</span></td>
                       <td><span className={cn('font-mono text-sm', getPnLColor(trade.r_multiple))}>{trade.r_multiple ? `${Number(trade.r_multiple) > 0 ? '+' : ''}${Number(trade.r_multiple).toFixed(2)}R` : '—'}</span></td>
-                      <td><span className="font-mono text-xs text-gray-500">{formatDate(trade.entry_time)}</span></td>
                       <td>
                         <span className={cn('badge',
                           trade.status === 'open' ? 'bg-accent/10 text-accent' : 'bg-gray-500/10 text-gray-500 dark:text-gray-400'
