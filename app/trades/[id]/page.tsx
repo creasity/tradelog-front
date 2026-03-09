@@ -69,8 +69,16 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
 }
 
 // ── QtyAmountRow ─────────────────────────────────────────────────
-// Bidirectional quantity ↔ amount row. Each field has its own local
-// state so typing in one never resets the other mid-input.
+function roundQty(n: number): string {
+  if (isNaN(n)) return ''
+  // Up to 8 decimals, trailing zeros stripped
+  return parseFloat(n.toFixed(8)).toString()
+}
+function roundAmt(n: number): string {
+  if (isNaN(n)) return ''
+  return parseFloat(n.toFixed(2)).toString()
+}
+
 function QtyAmountRow({
   entryPrice, quantity, onQtyChange, onAmountChange,
 }: {
@@ -79,57 +87,62 @@ function QtyAmountRow({
   onQtyChange: (v: string) => void
   onAmountChange: (qty: string) => void
 }) {
-  const [qtyVal,    setQtyVal]    = useState<string>(normalizeNum(quantity))
-  const [amountVal, setAmountVal] = useState<string>(
-    entryPrice && quantity ? String(parseFloat(String(quantity || 0)) * entryPrice) : ''
-  )
-  const qtyFocused    = useRef(false)
-  const amountFocused = useRef(false)
+  const qtyN   = parseFloat(String(quantity ?? ''))
+  const initQty = isNaN(qtyN) ? '' : roundQty(qtyN)
+  const initAmt = (!isNaN(qtyN) && entryPrice) ? roundAmt(qtyN * entryPrice) : ''
 
-  // Sync qty from parent (e.g. after save) — only when not focused
+  const [qtyVal,    setQtyVal]    = useState(initQty)
+  const [amountVal, setAmountVal] = useState(initAmt)
+
+  // lastSent: the normalized value we last pushed to parent.
+  // useEffect only resets local state when parent sends a DIFFERENT value
+  // (i.e. after a save that changed the number), not on our own onChange echo.
+  const lastSentQty = useRef(initQty)
+
   useEffect(() => {
-    if (!qtyFocused.current) {
-      const n = normalizeNum(quantity)
-      setQtyVal(n)
-      if (!amountFocused.current && entryPrice && n) {
-        const amt = parseFloat(n) * entryPrice
-        setAmountVal(isNaN(amt) ? '' : normalizeNum(amt))
+    const incoming = isNaN(parseFloat(String(quantity ?? '')))
+      ? '' : roundQty(parseFloat(String(quantity ?? '')))
+    if (incoming !== lastSentQty.current) {
+      lastSentQty.current = incoming
+      setQtyVal(incoming)
+      if (entryPrice && incoming) {
+        setAmountVal(roundAmt(parseFloat(incoming) * entryPrice))
+      } else {
+        setAmountVal('')
       }
     }
   }, [quantity, entryPrice])
 
   const handleQtyBlur = (raw: string) => {
-    qtyFocused.current = false
     const n = parseFloat(raw)
-    if (!isNaN(n)) {
-      onQtyChange(raw)
-      if (entryPrice) setAmountVal(normalizeNum(n * entryPrice))
-    } else {
-      onQtyChange(raw)
-    }
+    const normalized = isNaN(n) ? raw : roundQty(n)
+    setQtyVal(normalized)
+    lastSentQty.current = normalized   // mark before triggering re-render
+    onQtyChange(normalized)
+    if (!isNaN(n) && entryPrice) setAmountVal(roundAmt(n * entryPrice))
   }
 
   const handleAmountBlur = (raw: string) => {
-    amountFocused.current = false
     const amt = parseFloat(raw)
     if (!isNaN(amt) && entryPrice > 0) {
-      const qty = amt / entryPrice
-      const qtyStr = normalizeNum(qty)
+      const qtyN   = amt / entryPrice
+      const qtyStr = roundQty(qtyN)
       setQtyVal(qtyStr)
+      lastSentQty.current = qtyStr
       onAmountChange(qtyStr)
+      setAmountVal(roundAmt(amt))
     }
   }
 
   return (
     <>
       <div>
-        <label className="tl-label">Quantité</label>
+        <label className="tl-label">Quantité <span className="text-gray-400 font-normal normal-case tracking-normal">(max 8 décimales)</span></label>
         <input
           className="tl-input w-full"
           type="text"
           inputMode="decimal"
           value={qtyVal}
-          onFocus={() => { qtyFocused.current = true }}
           onChange={e => setQtyVal(e.target.value)}
           onBlur={e => handleQtyBlur(e.target.value)}
         />
@@ -137,7 +150,7 @@ function QtyAmountRow({
       <div>
         <label className="tl-label">
           Montant
-          {entryPrice > 0 && qtyVal && (
+          {entryPrice > 0 && qtyVal && !isNaN(parseFloat(qtyVal)) && (
             <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">
               — {normalizeNum(entryPrice)} × {qtyVal}
             </span>
@@ -149,8 +162,7 @@ function QtyAmountRow({
             type="text"
             inputMode="decimal"
             value={amountVal}
-            placeholder={entryPrice ? 'Prix × Qté' : 'Entrer le prix d\'entrée d\'abord'}
-            onFocus={() => { amountFocused.current = true }}
+            placeholder={entryPrice ? 'auto depuis Quantité' : 'Entrer le prix d'entrée d'abord'}
             onChange={e => setAmountVal(e.target.value)}
             onBlur={e => handleAmountBlur(e.target.value)}
           />
