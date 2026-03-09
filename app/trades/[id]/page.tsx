@@ -69,7 +69,7 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
 }
 
 function EditableField({
-  label, value, type = 'text', options, onChange, suffix,
+  label, value, type = 'text', options, onChange, suffix, hint,
 }: {
   label: string
   value: string | number | undefined
@@ -77,10 +77,11 @@ function EditableField({
   options?: string[]
   onChange: (v: string) => void
   suffix?: string
+  hint?: string
 }) {
   return (
     <div>
-      <label className="tl-label">{label}</label>
+      <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
       {type === 'select' && options ? (
         <select className="tl-select w-full" value={value ?? ''} onChange={e => onChange(e.target.value)}>
           <option value="">—</option>
@@ -493,16 +494,17 @@ export default function TradeDetailPage() {
           ))}
         </div>
 
-        {/* ── Tab: Overview (Trade data) ──────────────────────── */}
+        {/* ── Tab: Overview ──────────────────────────────────── */}
         {activeTab === 'overview' && (
           <div className="space-y-4">
-            {/* Core trade fields */}
+
+            {/* ── Instrument & Direction ── */}
             <div className="card p-5 space-y-4">
               <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
-                Données du trade
+                Instrument & Direction
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EditableField label="Symbole"     value={draft.symbol}      onChange={v => set('symbol', v.toUpperCase())} />
+                <EditableField label="Symbole" value={draft.symbol} onChange={v => set('symbol', v.toUpperCase())} />
                 <div>
                   <label className="tl-label">Direction</label>
                   <div className="flex gap-2">
@@ -525,13 +527,6 @@ export default function TradeDetailPage() {
                     ))}
                   </div>
                 </div>
-                <EditableField label="Prix d'entrée"   value={draft.entry_price} type="number" onChange={v => set('entry_price', parseFloat(v))} suffix="$" />
-                <EditableField label="Prix de sortie"  value={draft.exit_price}  type="number" onChange={v => set('exit_price', v ? parseFloat(v) : undefined)} suffix="$" />
-                <EditableField label="Quantité"        value={draft.quantity}    type="number" onChange={v => set('quantity', parseFloat(v))} />
-                <EditableField label="Levier"          value={draft.leverage}    type="number" onChange={v => set('leverage', v ? parseInt(v) : 1)} suffix="×" />
-                <EditableField label="Stop Loss"       value={draft.stop_loss}   type="number" onChange={v => set('stop_loss', v ? parseFloat(v) : undefined)} suffix="$" />
-                <EditableField label="Take Profit"     value={draft.take_profit} type="number" onChange={v => set('take_profit', v ? parseFloat(v) : undefined)} suffix="$" />
-                <EditableField label="Frais"           value={draft.fees}        type="number" onChange={v => set('fees', v ? parseFloat(v) : 0)} suffix="$" />
                 <div>
                   <label className="tl-label">Statut</label>
                   <select className="tl-select w-full" value={draft.status || 'open'} onChange={e => set('status', e.target.value)}>
@@ -540,6 +535,27 @@ export default function TradeDetailPage() {
                     <option value="cancelled">Annulé</option>
                   </select>
                 </div>
+                <EditableField label="Classe d'actif" value={draft.asset_class} type="select"
+                  options={['crypto','forex','indices','stocks','commodities']}
+                  onChange={v => set('asset_class', v)} />
+                <EditableField label="Mode trading"  value={(draft as any).trading_mode} type="select" options={TRADING_MODES} onChange={v => set('trading_mode', v)} />
+                <EditableField label="Blockchain"    value={(draft as any).blockchain}   type="select" options={BLOCKCHAINS}   onChange={v => set('blockchain', v)} />
+                <div className="sm:col-span-2">
+                  <EditableField label="Contrat / Token" value={(draft as any).token_contract} onChange={v => set('token_contract', v)} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Exécution & Prix ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Exécution & Prix
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditableField label="Prix d'entrée"  value={draft.entry_price} type="number" onChange={v => set('entry_price', parseFloat(v))} suffix="$" />
+                <EditableField label="Prix de sortie" hint="Laisser vide si trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v ? parseFloat(v) : undefined)} suffix="$" />
+                <EditableField label="Quantité"       value={draft.quantity}    type="number" onChange={v => set('quantity', parseFloat(v))} />
+                <EditableField label="Levier"         hint="1 = pas de levier" value={draft.leverage} type="number" onChange={v => set('leverage', v ? parseInt(v) : 1)} suffix="×" />
                 <EditableField
                   label="Date d'entrée"
                   value={draft.entry_time ? new Date(draft.entry_time).toISOString().slice(0, 16) : ''}
@@ -552,25 +568,8 @@ export default function TradeDetailPage() {
                   type="datetime-local"
                   onChange={v => set('exit_time', v ? new Date(v).toISOString() : undefined)}
                 />
-                <EditableField label="Timeframe" value={draft.timeframe} type="select" options={TIMEFRAMES} onChange={v => set('timeframe', v)} />
-                <EditableField label="Session"   value={draft.session}   type="select" options={SESSIONS}   onChange={v => set('session', v)} />
-
-                {/* ── Instrument extras ── */}
-                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Instrument</p>
-                </div>
-                <EditableField label="Mode trading" value={(draft as any).trading_mode} type="select" options={TRADING_MODES} onChange={v => set('trading_mode', v)} />
-                <EditableField label="Blockchain"   value={(draft as any).blockchain}   type="select" options={BLOCKCHAINS}   onChange={v => set('blockchain', v)} />
-                <div className="sm:col-span-2">
-                  <EditableField label="Contrat / Token" value={(draft as any).token_contract} onChange={v => set('token_contract', v)} />
-                </div>
-
-                {/* ── Exécution extras ── */}
-                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Exécution & Prix</p>
-                </div>
+                <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v ? parseFloat(v) : 0)} suffix="$" />
                 <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
-                <EditableField label="VWAP"         value={(draft as any).vwap}       type="number" onChange={v => set('vwap', v ? parseFloat(v) : undefined)} suffix="$" />
                 <div className="sm:col-span-2">
                   <label className="tl-label">Montant de position</label>
                   <div className="flex items-center gap-3">
@@ -598,12 +597,56 @@ export default function TradeDetailPage() {
                     )}
                   </div>
                 </div>
+                <EditableField label="VWAP" value={(draft as any).vwap} type="number" onChange={v => set('vwap', v ? parseFloat(v) : undefined)} suffix="$" />
+              </div>
+            </div>
 
-                {/* ── Contexte extras ── */}
-                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Contexte de marché</p>
-                </div>
+            {/* ── Gestion du Risque ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Gestion du Risque
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditableField label="Stop Loss"    value={draft.stop_loss}   type="number" onChange={v => set('stop_loss',   v ? parseFloat(v) : undefined)} suffix="$" />
+                <EditableField label="Take Profit"  value={draft.take_profit} type="number" onChange={v => set('take_profit', v ? parseFloat(v) : undefined)} suffix="$" />
+              </div>
+            </div>
+
+            {/* ── Contexte de Marché ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Contexte de Marché
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <EditableField label="Timeframe"     value={draft.timeframe}            type="select" options={TIMEFRAMES} onChange={v => set('timeframe', v)} />
+                <EditableField label="Session"       value={draft.session}              type="select" options={SESSIONS}   onChange={v => set('session', v)} />
+                <EditableField label="Condition marché" value={draft.market_condition}  type="select"
+                  options={['trending','ranging','volatile','breakout']}
+                  onChange={v => set('market_condition', v)} />
                 <EditableField label="Style trading" value={(draft as any).trading_style} type="select" options={TRADING_STYLES} onChange={v => set('trading_style', v)} />
+              </div>
+              <div>
+                <label className="tl-label">Setups utilisés</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {SETUP_TAGS_PRESETS.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        const current = draft.setup_tags || []
+                        set('setup_tags', current.includes(tag) ? current.filter((t: string) => t !== tag) : [...current, tag])
+                      }}
+                      className={cn(
+                        'text-[11px] font-mono px-2.5 py-1 rounded-full border transition-all',
+                        (draft.setup_tags || []).includes(tag)
+                          ? 'text-accent border-accent bg-accent/10 font-semibold'
+                          : 'text-gray-500 dark:text-gray-400 border-light-border dark:border-dark-border hover:border-gray-400'
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
