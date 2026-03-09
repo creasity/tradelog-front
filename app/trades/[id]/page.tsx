@@ -68,6 +68,99 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
   )
 }
 
+// ── QtyAmountRow ─────────────────────────────────────────────────
+// Bidirectional quantity ↔ amount row. Each field has its own local
+// state so typing in one never resets the other mid-input.
+function QtyAmountRow({
+  entryPrice, quantity, onQtyChange, onAmountChange,
+}: {
+  entryPrice: number
+  quantity: string | number | undefined
+  onQtyChange: (v: string) => void
+  onAmountChange: (qty: string) => void
+}) {
+  const [qtyVal,    setQtyVal]    = useState<string>(normalizeNum(quantity))
+  const [amountVal, setAmountVal] = useState<string>(
+    entryPrice && quantity ? String(parseFloat(String(quantity || 0)) * entryPrice) : ''
+  )
+  const qtyFocused    = useRef(false)
+  const amountFocused = useRef(false)
+
+  // Sync qty from parent (e.g. after save) — only when not focused
+  useEffect(() => {
+    if (!qtyFocused.current) {
+      const n = normalizeNum(quantity)
+      setQtyVal(n)
+      if (!amountFocused.current && entryPrice && n) {
+        const amt = parseFloat(n) * entryPrice
+        setAmountVal(isNaN(amt) ? '' : normalizeNum(amt))
+      }
+    }
+  }, [quantity, entryPrice])
+
+  const handleQtyBlur = (raw: string) => {
+    qtyFocused.current = false
+    const n = parseFloat(raw)
+    if (!isNaN(n)) {
+      onQtyChange(raw)
+      if (entryPrice) setAmountVal(normalizeNum(n * entryPrice))
+    } else {
+      onQtyChange(raw)
+    }
+  }
+
+  const handleAmountBlur = (raw: string) => {
+    amountFocused.current = false
+    const amt = parseFloat(raw)
+    if (!isNaN(amt) && entryPrice > 0) {
+      const qty = amt / entryPrice
+      const qtyStr = normalizeNum(qty)
+      setQtyVal(qtyStr)
+      onAmountChange(qtyStr)
+    }
+  }
+
+  return (
+    <>
+      <div>
+        <label className="tl-label">Quantité</label>
+        <input
+          className="tl-input w-full"
+          type="text"
+          inputMode="decimal"
+          value={qtyVal}
+          onFocus={() => { qtyFocused.current = true }}
+          onChange={e => setQtyVal(e.target.value)}
+          onBlur={e => handleQtyBlur(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="tl-label">
+          Montant
+          {entryPrice > 0 && qtyVal && (
+            <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">
+              — {normalizeNum(entryPrice)} × {qtyVal}
+            </span>
+          )}
+        </label>
+        <div className="relative">
+          <input
+            className="tl-input w-full"
+            type="text"
+            inputMode="decimal"
+            value={amountVal}
+            placeholder={entryPrice ? 'Prix × Qté' : 'Entrer le prix d\'entrée d\'abord'}
+            onFocus={() => { amountFocused.current = true }}
+            onChange={e => setAmountVal(e.target.value)}
+            onBlur={e => handleAmountBlur(e.target.value)}
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // Converts an ISO UTC string to a value usable in a datetime-local input (local time)
 function isoToLocalInput(iso: string | undefined): string {
   if (!iso) return ''
@@ -653,10 +746,24 @@ export default function TradeDetailPage() {
                 Exécution & Prix
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Row 1 : entry / exit price */}
                 <EditableField label="Prix d'entrée"  value={draft.entry_price} type="number" onChange={v => set('entry_price', v)} suffix="$" />
-                <EditableField label="Prix de sortie" hint="Laisser vide si trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v || undefined)} suffix="$" />
-                <EditableField label="Quantité"       value={draft.quantity}    type="number" onChange={v => set('quantity', v)} />
-                <EditableField label="Levier"         hint="1 = pas de levier" value={draft.leverage} type="number" onChange={v => set('leverage', v || 1)} suffix="×" />
+                <EditableField label="Prix de sortie" hint="vide = trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v || undefined)} suffix="$" />
+
+                {/* Row 2 : quantity / position amount — bidirectional */}
+                <QtyAmountRow
+                  entryPrice={toNum(draft.entry_price)}
+                  quantity={draft.quantity}
+                  onQtyChange={v => set('quantity', v)}
+                  onAmountChange={qty => set('quantity', qty)}
+                />
+
+                {/* Row 3 : leverage / fees */}
+                <EditableField label="Levier" hint="1 = sans levier" value={draft.leverage} type="number" onChange={v => set('leverage', v || 1)} suffix="×" />
+                <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v || 0)} suffix="$" />
+
+                {/* Row 4 : dates */}
                 <EditableField
                   label="Date d'entrée"
                   value={draft.entry_time}
@@ -665,41 +772,16 @@ export default function TradeDetailPage() {
                 />
                 <EditableField
                   label="Date de sortie"
-                  hint="Laisser vide si trade ouvert"
+                  hint="vide = trade ouvert"
                   value={draft.exit_time}
                   type="datetime-local"
                   onChange={v => set('exit_time', v || undefined)}
                 />
-                <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v || 0)} suffix="$" />
-                <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
-                <div className="sm:col-span-2">
-                  <label className="tl-label">Montant de position</label>
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                      <input
-                        className="tl-input w-full"
-                        type="number"
-                        step="any"
-                        value={(draft.entry_price && draft.quantity)
-                          ? (toNum(draft.entry_price) * toNum(draft.quantity)).toFixed(2)
-                          : ''}
-                        onChange={e => {
-                          const amount = parseFloat(e.target.value)
-                          const price  = toNum(draft.entry_price)
-                          if (amount > 0 && price > 0) set('quantity', parseFloat((amount / price).toFixed(8)))
-                        }}
-                        placeholder="Calcul auto depuis prix × quantité"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
-                    </div>
-                    {draft.entry_price && draft.quantity && (
-                      <span className="text-xs text-gray-400 font-mono whitespace-nowrap flex-shrink-0">
-                        {toNum(draft.entry_price).toLocaleString()} × {draft.quantity}
-                      </span>
-                    )}
-                  </div>
-                </div>
+
+                {/* Row 5 : VWAP / order type */}
                 <EditableField label="VWAP" value={(draft as any).vwap} type="number" onChange={v => set('vwap', v || undefined)} suffix="$" />
+                <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
+
               </div>
             </div>
 
