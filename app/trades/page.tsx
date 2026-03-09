@@ -51,36 +51,38 @@ export default function TradesPage() {
     finally { setDeleting(null) }
   }
 
+  const totalPnL = tradeList.reduce((s, t) => s + Number(t.net_pnl || 0), 0)
+  const wins     = tradeList.filter(t => Number(t.net_pnl || 0) > 0).length
+  const losses   = tradeList.filter(t => Number(t.net_pnl || 0) < 0).length
+
   const allIds = tradeList.map(t => t.id)
   const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id))
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
       return next
     })
   }
 
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds))
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set<string>() : new Set(allIds))
+  }
 
   const handleDeleteSelected = async () => {
     if (!selected.size) return
-    if (!confirm(`Supprimer ${selected.size} trade(s) sélectionné(s) ?`)) return
+    if (!confirm('Supprimer ' + selected.size + ' trade(s) ?')) return
     setDeletingBulk(true)
     try {
-      await Promise.all([...selected].map(id => trades.delete(id)))
-      setSelected(new Set())
+      await Promise.all(Array.from(selected).map(id => trades.delete(id)))
+      setSelected(new Set<string>())
       load()
     } catch (err: any) { alert(err.message) }
     finally { setDeletingBulk(false) }
   }
 
-  const totalPnL = tradeList.reduce((s, t) => s + Number(t.net_pnl || 0), 0)
-  const wins     = tradeList.filter(t => Number(t.net_pnl || 0) > 0).length
-  const losses   = tradeList.filter(t => Number(t.net_pnl || 0) < 0).length
-
-  return (
+    return (
     <AppLayout title="Trades" subtitle={`${pagination.total} trades au total`}>
 
       {/* Actions bar */}
@@ -221,7 +223,7 @@ export default function TradesPage() {
                 <thead>
                   <tr>
                     <th className="w-8 pr-0">
-                      <button onClick={toggleAll} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center">
+                      <button onClick={toggleAll} className="text-gray-400 hover:text-accent flex items-center">
                         {allSelected ? <CheckSquare size={15} className="text-accent" /> : <Square size={15} />}
                       </button>
                     </th>

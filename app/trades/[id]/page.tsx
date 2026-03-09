@@ -69,90 +69,86 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
 }
 
 // ── QtyAmountRow ─────────────────────────────────────────────────
-function roundQty(n: number): string {
+// Completely uncontrolled inputs. Uses a `resetKey` to re-mount
+// when the parent trade is reloaded after save (so new values show).
+// Within a session, never re-syncs from parent to avoid disrupting typing.
+function fmtQty(v: string | number | undefined): string {
+  if (v === undefined || v === null || v === '') return ''
+  const n = parseFloat(String(v))
   if (isNaN(n)) return ''
-  // Up to 8 decimals, trailing zeros stripped
   return parseFloat(n.toFixed(8)).toString()
 }
-function roundAmt(n: number): string {
-  if (isNaN(n)) return ''
+function fmtAmt(n: number): string {
+  if (isNaN(n) || !isFinite(n)) return ''
   return parseFloat(n.toFixed(2)).toString()
 }
 
 function QtyAmountRow({
-  entryPrice, quantity, onQtyChange, onAmountChange,
+  entryPrice, quantity, onQtyChange, onAmountChange, resetKey,
 }: {
   entryPrice: number
   quantity: string | number | undefined
   onQtyChange: (v: string) => void
   onAmountChange: (qty: string) => void
+  resetKey: string | number
 }) {
-  const qtyN   = parseFloat(String(quantity ?? ''))
-  const initQty = isNaN(qtyN) ? '' : roundQty(qtyN)
-  const initAmt = (!isNaN(qtyN) && entryPrice) ? roundAmt(qtyN * entryPrice) : ''
+  const initQty = fmtQty(quantity)
+  const epN = isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 0
+  const initAmt = initQty && epN ? fmtAmt(parseFloat(initQty) * epN) : ''
 
-  const [qtyVal,    setQtyVal]    = useState(initQty)
-  const [amountVal, setAmountVal] = useState(initAmt)
+  // Local state — never overwritten by parent after mount
+  const [qty, setQty] = useState(initQty)
+  const [amt, setAmt] = useState(initAmt)
 
-  // lastSent: the normalized value we last pushed to parent.
-  // useEffect only resets local state when parent sends a DIFFERENT value
-  // (i.e. after a save that changed the number), not on our own onChange echo.
-  const lastSentQty = useRef(initQty)
-
+  // Only reset when resetKey changes (i.e. after a successful save)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const incoming = isNaN(parseFloat(String(quantity ?? '')))
-      ? '' : roundQty(parseFloat(String(quantity ?? '')))
-    if (incoming !== lastSentQty.current) {
-      lastSentQty.current = incoming
-      setQtyVal(incoming)
-      if (entryPrice && incoming) {
-        setAmountVal(roundAmt(parseFloat(incoming) * entryPrice))
-      } else {
-        setAmountVal('')
-      }
-    }
-  }, [quantity, entryPrice])
+    setQty(fmtQty(quantity))
+    const q = parseFloat(fmtQty(quantity))
+    setAmt(epN && !isNaN(q) ? fmtAmt(q * epN) : '')
+  // resetKey is the only real trigger — quantity/entryPrice strings
+  // might echo back and cause re-renders we want to ignore
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey])
 
   const handleQtyBlur = (raw: string) => {
     const n = parseFloat(raw)
-    const normalized = isNaN(n) ? raw : roundQty(n)
-    setQtyVal(normalized)
-    lastSentQty.current = normalized   // mark before triggering re-render
+    const normalized = isNaN(n) ? raw : fmtQty(n)
+    setQty(normalized)
     onQtyChange(normalized)
-    if (!isNaN(n) && entryPrice) setAmountVal(roundAmt(n * entryPrice))
+    if (!isNaN(n) && epN) setAmt(fmtAmt(n * epN))
   }
 
   const handleAmountBlur = (raw: string) => {
-    const amt = parseFloat(raw)
-    if (!isNaN(amt) && entryPrice > 0) {
-      const qtyN   = amt / entryPrice
-      const qtyStr = roundQty(qtyN)
-      setQtyVal(qtyStr)
-      lastSentQty.current = qtyStr
-      onAmountChange(qtyStr)
-      setAmountVal(roundAmt(amt))
+    const a = parseFloat(raw)
+    if (!isNaN(a) && epN > 0) {
+      const q = a / epN
+      const qStr = fmtQty(q)
+      setQty(qStr)
+      onAmountChange(qStr)
+      setAmt(fmtAmt(a))
     }
   }
 
   return (
     <>
       <div>
-        <label className="tl-label">Quantité <span className="text-gray-400 font-normal normal-case tracking-normal">(max 8 décimales)</span></label>
+        <label className="tl-label">Quantité <span className="text-gray-400 font-normal normal-case tracking-normal text-[10px]">(8 déc. max)</span></label>
         <input
           className="tl-input w-full"
           type="text"
           inputMode="decimal"
-          value={qtyVal}
-          onChange={e => setQtyVal(e.target.value)}
+          value={qty}
+          onChange={e => setQty(e.target.value)}
           onBlur={e => handleQtyBlur(e.target.value)}
         />
       </div>
       <div>
         <label className="tl-label">
           Montant
-          {entryPrice > 0 && qtyVal && !isNaN(parseFloat(qtyVal)) && (
+          {epN > 0 && qty && !isNaN(parseFloat(qty)) && (
             <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">
-              — {normalizeNum(entryPrice)} × {qtyVal}
+              — {epN.toLocaleString()} × {qty}
             </span>
           )}
         </label>
@@ -161,9 +157,9 @@ function QtyAmountRow({
             className="tl-input w-full"
             type="text"
             inputMode="decimal"
-            value={amountVal}
-            placeholder={entryPrice ? 'auto depuis Quantité' : "Entrer le prix d'entrée d'abord"}
-            onChange={e => setAmountVal(e.target.value)}
+            value={amt}
+            placeholder={epN ? 'auto depuis Quantité' : "Entrer le prix d'entrée d'abord"}
+            onChange={e => setAmt(e.target.value)}
             onBlur={e => handleAmountBlur(e.target.value)}
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
@@ -172,6 +168,7 @@ function QtyAmountRow({
     </>
   )
 }
+
 
 // Converts an ISO UTC string to a value usable in a datetime-local input (local time)
 function isoToLocalInput(iso: string | undefined): string {
@@ -193,15 +190,14 @@ function localInputToIso(local: string): string {
   } catch { return local }
 }
 
-// Normalize a numeric value for display: strip trailing zeros from DB DECIMAL strings
-// e.g. "71000.00000000" -> "71000", "72655.22000000" -> "72655.22"
-function normalizeNum(v: string | number | undefined): string {
+// Normalize a numeric value: strip trailing zeros, no scientific notation
+function normalizeNum(v: string | number | undefined, decimals = 8): string {
   if (v === undefined || v === null || v === '') return ''
   const n = parseFloat(String(v))
-  if (isNaN(n)) return ''
-  // Use toPrecision to avoid scientific notation for large/small numbers, then strip trailing zeros
-  let s = String(n)
-  return s
+  if (isNaN(n) || !isFinite(n)) return ''
+  // Avoid scientific notation for very small numbers
+  if (Math.abs(n) < 1e-8 && n !== 0) return '0'
+  return n.toFixed(decimals).replace(/\.?0+$/, '') || '0'
 }
 
 function EditableField({
@@ -406,6 +402,7 @@ export default function TradeDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [dirty,    setDirty]    = useState(false)
   const [saved,    setSaved]    = useState(false)
+  const [resetKey, setResetKey] = useState(0)
   const [screenshots, setScreenshots] = useState<string[]>([]) // base64
   const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'media'>('overview')
 
@@ -485,6 +482,7 @@ export default function TradeDetailPage() {
       setDraft(data.trade)
       setDirty(false)
       setSaved(true)
+      setResetKey(k => k + 1)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: any) {
       alert(err.message)
@@ -794,6 +792,7 @@ export default function TradeDetailPage() {
                   quantity={draft.quantity}
                   onQtyChange={v => set('quantity', v)}
                   onAmountChange={qty => set('quantity', qty)}
+                  resetKey={resetKey}
                 />
 
                 {/* Row 3 : leverage / fees */}
