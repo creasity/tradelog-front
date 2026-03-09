@@ -5,19 +5,20 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, TrendingUp, BarChart3,
-  PlusCircle, Settings, LogOut, Zap, Menu, X, Sun, Moon, Upload
+  PlusCircle, Settings, LogOut, Zap, Menu, X, Sun, Moon, Upload, Wallet
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
 
 const NAV = [
-  { href: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/trades',     icon: TrendingUp,       label: 'Trades' },
+  { href: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/trades',        icon: TrendingUp,       label: 'Trades' },
   { href: '/trades/new',    icon: PlusCircle,       label: 'Nouveau Trade' },
   { href: '/trades/import', icon: Upload,           label: 'Import CSV' },
-  { href: '/analytics',  icon: BarChart3,        label: 'Analytics' },
-  { href: '/settings',   icon: Settings,         label: 'Paramètres' },
+  { href: '/analytics',     icon: BarChart3,        label: 'Analytics' },
+  { href: '/accounts',      icon: Wallet,           label: 'Comptes' },
+  { href: '/settings',      icon: Settings,         label: 'Paramètres' },
 ]
 
 const PLAN_COLORS: Record<string, string> = {
