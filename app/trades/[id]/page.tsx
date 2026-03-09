@@ -535,7 +535,7 @@ export default function TradeDetailPage() {
                     <option value="cancelled">Annulé</option>
                   </select>
                 </div>
-                <EditableField label="Classe d'actif" value={draft.asset_class} type="select"
+                <EditableField label="Classe d'actif" value={(draft as any).asset_class} type="select"
                   options={['crypto','forex','indices','stocks','commodities']}
                   onChange={v => set('asset_class', v)} />
                 <EditableField label="Mode trading"  value={(draft as any).trading_mode} type="select" options={TRADING_MODES} onChange={v => set('trading_mode', v)} />
@@ -620,7 +620,7 @@ export default function TradeDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <EditableField label="Timeframe"     value={draft.timeframe}            type="select" options={TIMEFRAMES} onChange={v => set('timeframe', v)} />
                 <EditableField label="Session"       value={draft.session}              type="select" options={SESSIONS}   onChange={v => set('session', v)} />
-                <EditableField label="Condition marché" value={draft.market_condition}  type="select"
+                <EditableField label="Condition marché" value={(draft as any).market_condition}  type="select"
                   options={['trending','ranging','volatile','breakout']}
                   onChange={v => set('market_condition', v)} />
                 <EditableField label="Style trading" value={(draft as any).trading_style} type="select" options={TRADING_STYLES} onChange={v => set('trading_style', v)} />
