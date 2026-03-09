@@ -26,7 +26,15 @@ const MISTAKE_TAGS_PRESETS = [
 
 const EMOTIONS = ['😌 Calme', '😤 Confiant', '😰 Stressé', '😨 Peur', '🤑 Euphorique', '😑 Neutre', '😤 Frustré', '🥶 Hésitant']
 const TIMEFRAMES = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '8h', '1D', '1W']
-const SESSIONS   = ['Asian', 'London', 'New York', 'London/NY Overlap', 'Pre-Market', 'After-Hours']
+const SESSIONS       = ['Asian', 'London', 'New York', 'London/NY Overlap', 'Pre-Market', 'After-Hours']
+const TRADING_MODES  = ['Spot', 'Futures']
+const TRADING_STYLES = ['Swing', 'Day trading', 'Scalping', 'DCA']
+const ORDER_TYPES    = ['Market', 'Limit']
+const BLOCKCHAINS    = [
+  'Bitcoin', 'Ethereum', 'Solana', 'BNB Smart Chain', 'XRP Ledger',
+  'Cardano', 'TRON', 'Avalanche', 'Polkadot', 'Polygon', 'Near Protocol',
+  'Arbitrum', 'Base', 'Optimism', 'Toncoin', 'Cosmos', 'Aptos', 'Sui',
+]
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -237,7 +245,7 @@ export default function TradeDetailPage() {
     load()
   }, [id])
 
-  const set = (key: keyof Trade, value: any) => {
+  const set = (key: keyof Trade | string, value: any) => {
     setDraft(d => ({ ...d, [key]: value }))
     setDirty(true)
   }
@@ -425,6 +433,16 @@ export default function TradeDetailPage() {
                   )}>
                     {(draft.status || 'open').toUpperCase()}
                   </span>
+                  {(draft as any).trading_mode && (
+                    <span className="badge text-[10px] bg-accent/10 text-accent">
+                      {(draft as any).trading_mode}
+                    </span>
+                  )}
+                  {(draft as any).trading_style && (
+                    <span className="badge text-[10px] bg-gray-500/10 text-gray-500">
+                      {(draft as any).trading_style}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">
                   {formatDate(draft.entry_time || trade.entry_time)}
@@ -452,7 +470,7 @@ export default function TradeDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
             <StatPill label="Entrée"   value={`$${toNum(draft.entry_price).toLocaleString()}`} />
             <StatPill label="Sortie"   value={draft.exit_price ? `$${toNum(draft.exit_price).toLocaleString()}` : '—'} />
-            <StatPill label="Quantité" value={`${draft.quantity}${draft.leverage && draft.leverage > 1 ? ` · ×${draft.leverage}` : ''}`} />
+            <StatPill label="Position" value={draft.entry_price && draft.quantity ? `$${(toNum(draft.entry_price) * toNum(draft.quantity)).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'} />
             <StatPill label="Frais"    value={draft.fees ? formatPnL(-toNum(draft.fees)) : '—'} />
           </div>
         </div>
@@ -540,6 +558,68 @@ export default function TradeDetailPage() {
                 />
                 <EditableField label="Timeframe" value={draft.timeframe} type="select" options={TIMEFRAMES} onChange={v => set('timeframe', v)} />
                 <EditableField label="Session"   value={draft.session}   type="select" options={SESSIONS}   onChange={v => set('session', v)} />
+              </div>
+            </div>
+
+            {/* ── Instrument ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Instrument
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditableField label="Mode trading" value={(draft as any).trading_mode} type="select" options={TRADING_MODES} onChange={v => set('trading_mode', v)} />
+                <EditableField label="Blockchain"   value={(draft as any).blockchain}   type="select" options={BLOCKCHAINS}   onChange={v => set('blockchain', v)} />
+                <div className="sm:col-span-2">
+                  <EditableField label="Contrat / Token" value={(draft as any).token_contract} onChange={v => set('token_contract', v)} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Exécution & Prix ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Exécution & Prix
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
+                <EditableField label="VWAP"         value={(draft as any).vwap}       type="number" onChange={v => set('vwap', v ? parseFloat(v) : undefined)} suffix="$" />
+                <div className="sm:col-span-2">
+                  <label className="tl-label">Montant de position</label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        className="tl-input w-full"
+                        type="number"
+                        step="any"
+                        value={(draft.entry_price && draft.quantity)
+                          ? (toNum(draft.entry_price) * toNum(draft.quantity)).toFixed(2)
+                          : ''}
+                        onChange={e => {
+                          const amount = parseFloat(e.target.value)
+                          const price  = toNum(draft.entry_price)
+                          if (amount > 0 && price > 0) set('quantity', parseFloat((amount / price).toFixed(8)))
+                        }}
+                        placeholder="Calcul auto depuis prix × quantité"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
+                    </div>
+                    {draft.entry_price && draft.quantity && (
+                      <span className="text-xs text-gray-400 font-mono whitespace-nowrap flex-shrink-0">
+                        {toNum(draft.entry_price).toLocaleString()} × {draft.quantity}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Contexte de marché ── */}
+            <div className="card p-5 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
+                Contexte de marché
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditableField label="Style trading" value={(draft as any).trading_style} type="select" options={TRADING_STYLES} onChange={v => set('trading_style', v)} />
               </div>
             </div>
 
