@@ -434,14 +434,10 @@ export default function TradeDetailPage() {
                     {(draft.status || 'open').toUpperCase()}
                   </span>
                   {(draft as any).trading_mode && (
-                    <span className="badge text-[10px] bg-accent/10 text-accent">
-                      {(draft as any).trading_mode}
-                    </span>
+                    <span className="badge text-[10px] bg-accent/10 text-accent">{(draft as any).trading_mode}</span>
                   )}
                   {(draft as any).trading_style && (
-                    <span className="badge text-[10px] bg-gray-500/10 text-gray-500">
-                      {(draft as any).trading_style}
-                    </span>
+                    <span className="badge text-[10px] bg-gray-500/10 text-gray-500">{(draft as any).trading_style}</span>
                   )}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">
@@ -558,29 +554,21 @@ export default function TradeDetailPage() {
                 />
                 <EditableField label="Timeframe" value={draft.timeframe} type="select" options={TIMEFRAMES} onChange={v => set('timeframe', v)} />
                 <EditableField label="Session"   value={draft.session}   type="select" options={SESSIONS}   onChange={v => set('session', v)} />
-              </div>
-            </div>
 
-            {/* ── Instrument ── */}
-            <div className="card p-5 space-y-4">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
-                Instrument
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ── Instrument extras ── */}
+                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Instrument</p>
+                </div>
                 <EditableField label="Mode trading" value={(draft as any).trading_mode} type="select" options={TRADING_MODES} onChange={v => set('trading_mode', v)} />
                 <EditableField label="Blockchain"   value={(draft as any).blockchain}   type="select" options={BLOCKCHAINS}   onChange={v => set('blockchain', v)} />
                 <div className="sm:col-span-2">
                   <EditableField label="Contrat / Token" value={(draft as any).token_contract} onChange={v => set('token_contract', v)} />
                 </div>
-              </div>
-            </div>
 
-            {/* ── Exécution & Prix ── */}
-            <div className="card p-5 space-y-4">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
-                Exécution & Prix
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ── Exécution extras ── */}
+                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Exécution & Prix</p>
+                </div>
                 <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
                 <EditableField label="VWAP"         value={(draft as any).vwap}       type="number" onChange={v => set('vwap', v ? parseFloat(v) : undefined)} suffix="$" />
                 <div className="sm:col-span-2">
@@ -610,15 +598,11 @@ export default function TradeDetailPage() {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* ── Contexte de marché ── */}
-            <div className="card p-5 space-y-4">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">
-                Contexte de marché
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ── Contexte extras ── */}
+                <div className="sm:col-span-2 border-t border-light-border dark:border-dark-border pt-4 mt-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-gray-400 mb-3">Contexte de marché</p>
+                </div>
                 <EditableField label="Style trading" value={(draft as any).trading_style} type="select" options={TRADING_STYLES} onChange={v => set('trading_style', v)} />
               </div>
             </div>

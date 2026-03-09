@@ -12,7 +12,15 @@ const MISTAKE_PRESETS = ['fomo_entry', 'moved_sl', 'early_exit', 'oversize', 're
 const EMOTIONS = ['calm', 'confident', 'fomo', 'anxious', 'greedy', 'frustrated', 'neutral', 'excited']
 const SESSIONS = ['asian', 'london', 'ny', 'overlap', 'other']
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', 'D', 'W']
-const ASSET_CLASSES = ['crypto', 'forex', 'indices', 'stocks', 'commodities']
+const ASSET_CLASSES   = ['crypto', 'forex', 'indices', 'stocks', 'commodities']
+const TRADING_MODES  = ['Spot', 'Futures']
+const TRADING_STYLES = ['Swing', 'Day trading', 'Scalping', 'DCA']
+const ORDER_TYPES    = ['Market', 'Limit']
+const BLOCKCHAINS    = [
+  'Bitcoin', 'Ethereum', 'Solana', 'BNB Smart Chain', 'XRP Ledger',
+  'Cardano', 'TRON', 'Avalanche', 'Polkadot', 'Polygon', 'Near Protocol',
+  'Arbitrum', 'Base', 'Optimism', 'Toncoin', 'Cosmos', 'Aptos', 'Sui',
+]
 
 interface FormData {
   account_id: string
@@ -40,6 +48,13 @@ interface FormData {
   emotion_exit: string
   mistake_tags: string[]
   notes: string
+  trading_mode: string
+  trading_style: string
+  order_type: string
+  blockchain: string
+  token_contract: string
+  vwap: string
+  position_size: string
 }
 
 const DEFAULT: FormData = {
@@ -52,6 +67,8 @@ const DEFAULT: FormData = {
   setup_tags: [], entry_reason: '', exit_reason: '',
   rating: '', emotion_entry: '', emotion_exit: '',
   mistake_tags: [], notes: '',
+  trading_mode: '', trading_style: '', order_type: '',
+  blockchain: '', token_contract: '', vwap: '', position_size: '',
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -120,7 +137,7 @@ export default function NewTradePage() {
     })
   }, [])
 
-  const set = (key: keyof FormData, value: string | string[]) =>
+  const set = (key: keyof FormData | string, value: string | string[]) =>
     setForm(f => ({ ...f, [key]: value }))
 
   // Auto-calculate estimated P&L
@@ -168,6 +185,12 @@ export default function NewTradePage() {
         timeframe: form.timeframe || undefined,
         session: form.session || undefined,
         market_condition: form.market_condition || undefined,
+        trading_mode:    (form as any).trading_mode    || undefined,
+        trading_style:   (form as any).trading_style   || undefined,
+        order_type:      (form as any).order_type      || undefined,
+        blockchain:      (form as any).blockchain      || undefined,
+        token_contract:  (form as any).token_contract  || undefined,
+        vwap:            (form as any).vwap ? parseFloat((form as any).vwap) : undefined,
         source: 'manual',
       }
 
@@ -246,6 +269,29 @@ export default function NewTradePage() {
                 ))}
               </select>
             </Field>
+
+            <Field label="Mode trading">
+              <select className="tl-select" value={(form as any).trading_mode} onChange={e => set('trading_mode', e.target.value)}>
+                <option value="">—</option>
+                {TRADING_MODES.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Blockchain">
+              <select className="tl-select" value={(form as any).blockchain} onChange={e => set('blockchain', e.target.value)}>
+                <option value="">—</option>
+                {BLOCKCHAINS.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Contrat / Token" hint="Adresse ou nom du token">
+              <input
+                className="tl-input"
+                placeholder="0x... ou nom du token"
+                value={(form as any).token_contract}
+                onChange={e => set('token_contract', e.target.value)}
+              />
+            </Field>
           </div>
         </Section>
 
@@ -278,6 +324,36 @@ export default function NewTradePage() {
 
             <Field label="Frais (commissions)">
               <input className="tl-input" type="number" step="any" placeholder="0" value={form.fees} onChange={e => set('fees', e.target.value)} />
+            </Field>
+
+            <Field label="Type d'ordre">
+              <select className="tl-select" value={(form as any).order_type} onChange={e => set('order_type', e.target.value)}>
+                <option value="">—</option>
+                {ORDER_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Montant de position ($)" hint="Calcule la quantité si vide">
+              <input
+                className="tl-input"
+                type="number"
+                step="any"
+                placeholder={form.entry_price && form.quantity
+                  ? (parseFloat(form.entry_price) * parseFloat(form.quantity)).toFixed(2)
+                  : 'ex: 1000'}
+                value={(form as any).position_size}
+                onChange={e => {
+                  set('position_size', e.target.value)
+                  const amount = parseFloat(e.target.value)
+                  const price  = parseFloat(form.entry_price)
+                  if (amount > 0 && price > 0 && !form.quantity)
+                    set('quantity', (amount / price).toFixed(8))
+                }}
+              />
+            </Field>
+
+            <Field label="VWAP" hint="Prix moyen pondéré par volume">
+              <input className="tl-input" type="number" step="any" placeholder="42100" value={(form as any).vwap} onChange={e => set('vwap', e.target.value)} />
             </Field>
 
             {/* P&L preview */}
@@ -332,6 +408,13 @@ export default function NewTradePage() {
                 {['trending', 'ranging', 'volatile', 'breakout'].map(m => (
                   <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
                 ))}
+              </select>
+            </Field>
+
+            <Field label="Style trading">
+              <select className="tl-select" value={(form as any).trading_style} onChange={e => set('trading_style', e.target.value)}>
+                <option value="">—</option>
+                {TRADING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </Field>
           </div>

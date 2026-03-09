@@ -21,7 +21,13 @@ const TL_FIELDS = [
   { key: 'stop_loss',   label: 'Stop Loss',      required: false },
   { key: 'take_profit', label: 'Take Profit',    required: false },
   { key: 'notes',       label: 'Notes',          required: false },
-  { key: 'ignore',      label: '— Ignorer —',   required: false },
+  { key: 'trading_mode',   label: 'Mode trading',    required: false, hint: 'Spot ou Futures' },
+  { key: 'trading_style',  label: 'Style trading',   required: false, hint: 'Swing / Scalping...' },
+  { key: 'order_type',     label: "Type d'ordre",    required: false, hint: 'Market ou Limit' },
+  { key: 'blockchain',     label: 'Blockchain',      required: false },
+  { key: 'token_contract', label: 'Contrat / Token', required: false },
+  { key: 'vwap',           label: 'VWAP',            required: false },
+  { key: 'ignore',         label: '— Ignorer —',     required: false },
 ]
 
 // Auto-détection des colonnes par nom
@@ -41,6 +47,12 @@ function autoDetect(headers: string[]): Record<string, string> {
     [/sl|stop.?loss/i,                   'stop_loss'],
     [/tp|take.?profit/i,                 'take_profit'],
     [/note|comment|remark/i,             'notes'],
+    [/trading.?mode|mode.?trading/i,     'trading_mode'],
+    [/trading.?style|style.?trading/i,   'trading_style'],
+    [/order.?type|type.?ordre/i,         'order_type'],
+    [/blockchain|chain|network/i,        'blockchain'],
+    [/contract|token.?contract|contrat/i,'token_contract'],
+    [/vwap/i,                            'vwap'],
   ]
   headers.forEach(h => {
     const match = rules.find(([regex]) => regex.test(h))
@@ -191,7 +203,13 @@ export default function ImportPage() {
       if (get('net_pnl'))     t.net_pnl     = parseFloat(get('net_pnl'))
       if (get('stop_loss'))   t.stop_loss   = parseFloat(get('stop_loss'))
       if (get('take_profit')) t.take_profit = parseFloat(get('take_profit'))
-      if (get('notes'))       t.notes       = get('notes')
+      if (get('notes'))         t.notes          = get('notes')
+      if (get('trading_mode'))   (t as any).trading_mode   = get('trading_mode')
+      if (get('trading_style'))  (t as any).trading_style  = get('trading_style')
+      if (get('order_type'))     (t as any).order_type     = get('order_type')
+      if (get('blockchain'))     (t as any).blockchain     = get('blockchain')
+      if (get('token_contract')) (t as any).token_contract = get('token_contract')
+      if (get('vwap'))           (t as any).vwap           = parseFloat(get('vwap'))
 
       if (!t.symbol)         t._error = 'Symbole manquant'
       else if (!t.entry_price) t._error = 'Prix entrée invalide'
@@ -230,7 +248,13 @@ export default function ImportPage() {
         leverage:    get('leverage')    ? parseFloat(get('leverage'))    : 1,
         stop_loss:   get('stop_loss')   ? parseFloat(get('stop_loss'))   : undefined,
         take_profit: get('take_profit') ? parseFloat(get('take_profit')) : undefined,
-        notes:       get('notes')       || undefined,
+        notes:          get('notes')          || undefined,
+        trading_mode:   get('trading_mode')   || undefined,
+        trading_style:  get('trading_style')  || undefined,
+        order_type:     get('order_type')     || undefined,
+        blockchain:     get('blockchain')     || undefined,
+        token_contract: get('token_contract') || undefined,
+        vwap:           get('vwap') ? parseFloat(get('vwap')) : undefined,
         status:      (get('exit_price') ? 'closed' : 'open') as 'open'|'closed',
         source:      'csv' as const,
         _row: idx + 2,
