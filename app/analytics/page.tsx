@@ -9,7 +9,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts'
 import { useTheme } from '@/contexts/ThemeContext'
-import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Sparkles, RefreshCw, TrendingUp, Target, Zap, Ruler, Trophy, Skull, ReceiptText, Clock } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -34,20 +34,21 @@ const PERIODS = [
 // Micro components
 // ─────────────────────────────────────────────────────────────────────────────
 
-// KPI card — icon left, text right, no truncation
-function Kpi({ label, value, sub, color = '#4f8ef7', icon }: {
-  label: string; value: string; sub?: string; color?: string; icon: string
+// KPI card — icon top-left, value full width below
+function Kpi({ label, value, sub, color = '#4f8ef7', icon: Icon }: {
+  label: string; value: string; sub?: string; color?: string; icon: React.ReactNode
 }) {
   return (
-    <div className="card px-3 py-2.5 flex items-center gap-2.5 hover:border-accent/30 transition-colors">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
-        style={{ background: color + '18' }}>
-        {icon}
+    <div className="card p-4 flex flex-col gap-3 hover:border-accent/30 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-accent/10 text-accent">
+          {Icon}
+        </div>
+        <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500 text-right leading-tight">{label}</div>
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500 leading-none mb-1 whitespace-nowrap">{label}</div>
-        <div className="font-mono font-bold text-sm leading-none" style={{ color }}>{value}</div>
-        {sub && <div className="text-[9px] font-mono text-gray-500 leading-tight mt-0.5 whitespace-nowrap">{sub}</div>}
+      <div>
+        <div className="font-mono font-bold text-base leading-none" style={{ color }}>{value}</div>
+        {sub && <div className="text-[9px] font-mono text-gray-500 mt-1">{sub}</div>}
       </div>
     </div>
   )
@@ -265,27 +266,27 @@ Sois direct, précis, bienveillant. Réponds en français.`
       {/* ── KPI grid — icon on top, 4+4 cols ──────────────────────── */}
       {ov && (
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mb-4">
-          <Kpi icon="💰" label="P&L Net"       value={formatPnL(ov.total_pnl)}
+          <Kpi icon={<TrendingUp size={15} />} label="P&L Net"       value={formatPnL(ov.total_pnl)}
             sub={`${toNum(ov.total_trades)}T`} color={pnlColor} />
-          <Kpi icon="🎯" label="Win Rate"
+          <Kpi icon={<Target size={15} />} label="Win Rate"
             value={`${toNum(ov.win_rate).toFixed(1)}%`}
             sub={`${ov.winning_trades}W / ${ov.losing_trades}L`}
             color={toNum(ov.win_rate) >= 50 ? '#00d17a' : '#f59e0b'} />
-          <Kpi icon="⚡" label="Profit Factor"
+          <Kpi icon={<Zap size={15} />} label="Profit Factor"
             value={ov.profit_factor != null ? toNum(ov.profit_factor).toFixed(2) : '—'}
             sub={toNum(ov.profit_factor) >= 2 ? 'Excellent' : toNum(ov.profit_factor) >= 1.5 ? 'Bon' : toNum(ov.profit_factor) >= 1 ? 'Seuil' : 'Négatif'}
             color={toNum(ov.profit_factor) >= 1.5 ? '#00d17a' : toNum(ov.profit_factor) >= 1 ? '#f59e0b' : '#ff3b5c'} />
-          <Kpi icon="📐" label="Avg R"
+          <Kpi icon={<Ruler size={15} />} label="Avg R"
             value={ov.avg_r != null ? `${toNum(ov.avg_r) >= 0 ? '+' : ''}${toNum(ov.avg_r).toFixed(2)}R` : '—'}
             sub="par trade"
             color={toNum(ov.avg_r) >= 1 ? '#00d17a' : toNum(ov.avg_r) >= 0 ? '#f59e0b' : '#ff3b5c'} />
-          <Kpi icon="🏆" label="Best Trade"    value={formatPnL(ov.best_trade)}   color="#00d17a" />
-          <Kpi icon="💀" label="Worst Trade"   value={formatPnL(ov.worst_trade)}  color="#ff3b5c" />
-          <Kpi icon="💸" label="Frais"
+          <Kpi icon={<Trophy size={15} />} label="Best Trade"    value={formatPnL(ov.best_trade)}   color="#00d17a" />
+          <Kpi icon={<Skull size={15} />} label="Worst Trade"   value={formatPnL(ov.worst_trade)}  color="#ff3b5c" />
+          <Kpi icon={<ReceiptText size={15} />} label="Frais"
             value={formatPnL(ov.total_fees)}
             sub={`moy. ${ov.total_trades > 0 ? Number(toNum(ov.total_fees) / toNum(ov.total_trades) * -1).toFixed(2) : '0'}$`}
             color="#f59e0b" />
-          <Kpi icon="⏱" label="Durée moy."
+          <Kpi icon={<Clock size={15} />} label="Durée moy."
             value={formatDuration(ov.avg_duration_seconds)}
             sub={`${ov.open_trades} ouverts`}
             color="#4f8ef7" />
