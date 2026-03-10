@@ -109,54 +109,6 @@ function TagPicker({ options, selected, onChange }: { options: string[]; selecte
   )
 }
 
-// ── Bidirectional Qty/Amount ──────────────────────────────────────
-function QtyAmountFields({
-  entryPrice, qty, amount, onQtyChange, onAmountChange,
-}: {
-  entryPrice: string; qty: string; amount: string
-  onQtyChange: (v: string) => void; onAmountChange: (v: string) => void
-}) {
-  const ep = parseFloat(entryPrice)
-
-  const handleQtyBlur = (raw: string) => {
-    const n = parseFloat(raw)
-    onQtyChange(raw)
-    if (!isNaN(n) && ep > 0) {
-      onAmountChange(parseFloat((n * ep).toFixed(2)).toString())
-    }
-  }
-
-  const handleAmountBlur = (raw: string) => {
-    const amt = parseFloat(raw)
-    onAmountChange(raw)
-    if (!isNaN(amt) && ep > 0) {
-      onQtyChange(parseFloat((amt / ep).toFixed(8)).toString())
-    }
-  }
-
-  return (
-    <>
-      <Field label="Quantité">
-        <input className="tl-input" type="text" inputMode="decimal"
-          placeholder="0.1"
-          defaultValue={qty}
-          key={`qty-${qty}`}
-          onBlur={e => handleQtyBlur(e.target.value)}
-          required />
-      </Field>
-      <Field label="Montant" hint={ep > 0 && qty ? `${ep} × ${qty}` : 'Prix × Qté'}>
-        <div className="relative">
-          <input className="tl-input w-full pr-7" type="text" inputMode="decimal"
-            placeholder={ep > 0 && qty ? parseFloat((parseFloat(qty) * ep).toFixed(2)).toString() : 'ex: 1000'}
-            defaultValue={amount}
-            key={`amt-${amount}`}
-            onBlur={e => handleAmountBlur(e.target.value)} />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
-        </div>
-      </Field>
-    </>
-  )
-}
 
 export default function NewTradePage() {
   const router = useRouter()
@@ -327,16 +279,21 @@ export default function NewTradePage() {
                 onChange={e => set('exit_price', e.target.value)} />
             </Field>
 
-            {/* Row 2: quantité / montant bidirectionnel */}
-            <QtyAmountFields
-              entryPrice={form.entry_price}
-              qty={form.quantity}
-              amount={form.amount}
-              onQtyChange={v => set('quantity', v)}
-              onAmountChange={v => set('amount', v)}
-            />
+            {/* Row 2: quantité / frais */}
+            <Field label="Quantité">
+              <input className="tl-input" type="text" inputMode="decimal"
+                placeholder="0.1" value={form.quantity}
+                onChange={e => set('quantity', e.target.value)} required />
+            </Field>
+            <Field label="Frais">
+              <div className="relative">
+                <input className="tl-input pr-7" type="text" inputMode="decimal" placeholder="0" value={form.fees}
+                  onChange={e => set('fees', e.target.value)} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
+              </div>
+            </Field>
 
-            {/* Row 3: levier / frais */}
+            {/* Row 3: levier / VWAP */}
             <Field label="Levier" hint="1 = sans levier">
               <div className="relative">
                 <input className="tl-input pr-7" type="text" inputMode="decimal" placeholder="1" value={form.leverage}
@@ -344,10 +301,10 @@ export default function NewTradePage() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">×</span>
               </div>
             </Field>
-            <Field label="Frais">
+            <Field label="VWAP" hint="prix moyen pondéré">
               <div className="relative">
-                <input className="tl-input pr-7" type="text" inputMode="decimal" placeholder="0" value={form.fees}
-                  onChange={e => set('fees', e.target.value)} />
+                <input className="tl-input pr-7" type="text" inputMode="decimal" placeholder="72100" value={form.vwap}
+                  onChange={e => set('vwap', e.target.value)} />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
               </div>
             </Field>
@@ -362,14 +319,7 @@ export default function NewTradePage() {
                 onChange={e => set('exit_time', e.target.value)} />
             </Field>
 
-            {/* Row 5: VWAP / type d'ordre */}
-            <Field label="VWAP" hint="prix moyen pondéré">
-              <div className="relative">
-                <input className="tl-input pr-7" type="text" inputMode="decimal" placeholder="72100" value={form.vwap}
-                  onChange={e => set('vwap', e.target.value)} />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
-              </div>
-            </Field>
+            {/* Row 5: type d'ordre seul */}
             <Field label="Type d'ordre">
               <select className="tl-select" value={form.order_type} onChange={e => set('order_type', e.target.value)}>
                 <option value="">—</option>

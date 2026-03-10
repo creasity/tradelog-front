@@ -68,97 +68,7 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
   )
 }
 
-// ── QtyAmountRow ─────────────────────────────────────────────────
-// Uses truly UNCONTROLLED inputs (defaultValue + key) so React can
-// never interfere with what the user is typing. The inputs remount
-// only when resetKey changes (after a successful save).
-function fmtQty(v: string | number | undefined): string {
-  if (v === undefined || v === null || v === '') return ''
-  const n = parseFloat(String(v))
-  if (isNaN(n) || !isFinite(n)) return ''
-  if (Math.abs(n) < 1e-8 && n !== 0) return '0'
-  return parseFloat(n.toFixed(8)).toString()
-}
-function fmtAmt(n: number): string {
-  if (isNaN(n) || !isFinite(n)) return ''
-  if (Math.abs(n) < 0.001 && n !== 0) return '0'
-  return parseFloat(n.toFixed(2)).toString()
-}
 
-function QtyAmountRow({
-  entryPrice, quantity, onQtyChange, onAmountChange, resetKey,
-}: {
-  entryPrice: number
-  quantity: string | number | undefined
-  onQtyChange: (v: string) => void
-  onAmountChange: (qty: string) => void
-  resetKey: string | number
-}) {
-  const epN     = isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 0
-  const initQty = fmtQty(quantity)
-  const initAmt = initQty && epN ? fmtAmt(parseFloat(initQty) * epN) : ''
-
-  // Refs to read uncontrolled input values without touching state
-  const qtyRef = useRef<HTMLInputElement>(null)
-  const amtRef = useRef<HTMLInputElement>(null)
-
-  const handleQtyBlur = () => {
-    const raw = qtyRef.current?.value ?? ''
-    const n   = parseFloat(raw)
-    if (!isNaN(n)) {
-      onQtyChange(fmtQty(n))
-      if (epN && amtRef.current) amtRef.current.value = fmtAmt(n * epN)
-    }
-  }
-
-  const handleAmountBlur = () => {
-    const raw = amtRef.current?.value ?? ''
-    const a   = parseFloat(raw)
-    if (!isNaN(a) && epN > 0) {
-      const qStr = fmtQty(a / epN)
-      onAmountChange(qStr)
-      if (qtyRef.current) qtyRef.current.value = qStr
-      if (amtRef.current) amtRef.current.value = fmtAmt(a)
-    }
-  }
-
-  // key={resetKey} forces a full remount of both inputs after save
-  return (
-    <>
-      <div>
-        <label className="tl-label">
-          Quantité
-          <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">(8 déc. max)</span>
-        </label>
-        <input
-          key={`qty-${resetKey}`}
-          ref={qtyRef}
-          className="tl-input w-full"
-          type="text"
-          inputMode="decimal"
-          defaultValue={initQty}
-          onBlur={handleQtyBlur}
-        />
-      </div>
-      <div>
-        <label className="tl-label">Montant</label>
-        <div className="relative">
-          <input
-            key={`amt-${resetKey}`}
-            ref={amtRef}
-            className="tl-input w-full"
-            type="text"
-            inputMode="decimal"
-            defaultValue={initAmt}
-            placeholder={epN ? 'auto depuis Quantité' : "Entrer le prix d'entrée d'abord"}
-            onBlur={handleAmountBlur}
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
-        </div>
-      </div>
-    </>
-  )
-}
 
 // Converts an ISO UTC string to a value usable in a datetime-local input (local time)
 function isoToLocalInput(iso: string | undefined): string {
@@ -392,7 +302,6 @@ export default function TradeDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [dirty,    setDirty]    = useState(false)
   const [saved,    setSaved]    = useState(false)
-  const [resetKey, setResetKey] = useState(0)
   const [screenshots, setScreenshots] = useState<string[]>([]) // base64
   const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'media'>('overview')
 
@@ -472,7 +381,6 @@ export default function TradeDetailPage() {
       setDraft(data.trade)
       setDirty(false)
       setSaved(true)
-      setResetKey(k => k + 1)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: any) {
       alert(err.message)
@@ -772,40 +680,48 @@ export default function TradeDetailPage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                {/* Row 1 : entry / exit price */}
-                <EditableField label="Prix d'entrée"  value={draft.entry_price} type="number" onChange={v => set('entry_price', v)} suffix="$" />
-                <EditableField label="Prix de sortie" hint="vide = trade ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v || undefined)} suffix="$" />
+                {/* Row 1 : prix entrée / sortie */}
+                <EditableField label="Prix d'entrée" value={draft.entry_price} type="number" onChange={v => set('entry_price', v)} suffix="$" />
+                <EditableField label="Prix de sortie" hint="vide = ouvert" value={draft.exit_price} type="number" onChange={v => set('exit_price', v || undefined)} suffix="$" />
 
-                {/* Row 2 : quantity / position amount — bidirectional */}
-                <QtyAmountRow
-                  entryPrice={toNum(draft.entry_price)}
-                  quantity={draft.quantity}
-                  onQtyChange={v => set('quantity', v)}
-                  onAmountChange={qty => set('quantity', qty)}
-                  resetKey={resetKey}
-                />
-
-                {/* Row 3 : leverage / fees */}
-                <EditableField label="Levier" hint="1 = sans levier" value={draft.leverage} type="number" onChange={v => set('leverage', v || 1)} suffix="×" />
+                {/* Row 2 : quantité / frais */}
+                <EditableField label="Quantité" value={draft.quantity} type="number" onChange={v => set('quantity', v)} />
                 <EditableField label="Frais" value={draft.fees} type="number" onChange={v => set('fees', v || 0)} suffix="$" />
 
-                {/* Row 4 : dates */}
-                <EditableField
-                  label="Date d'entrée"
-                  value={draft.entry_time}
-                  type="datetime-local"
-                  onChange={v => set('entry_time', v || undefined)}
-                />
-                <EditableField
-                  label="Date de sortie"
-                  hint="vide = trade ouvert"
-                  value={draft.exit_time}
-                  type="datetime-local"
-                  onChange={v => set('exit_time', v || undefined)}
-                />
+                {/* Row 3 : montant entrée / montant sortie — lecture seule */}
+                {(() => {
+                  const ep  = toNum(draft.entry_price)
+                  const xp  = toNum(draft.exit_price)
+                  const qty = toNum(draft.quantity)
+                  const amtEntry = ep && qty ? (ep * qty).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
+                  const amtExit  = xp && qty ? (xp * qty).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'
+                  return (
+                    <>
+                      <div>
+                        <label className="tl-label">Montant entrée</label>
+                        <div className="tl-input bg-light-hover dark:bg-dark-hover text-gray-500 dark:text-gray-400 cursor-default font-mono text-sm">
+                          {amtEntry} {amtEntry !== '—' && <span className="text-xs text-gray-400">$</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="tl-label">Montant sortie</label>
+                        <div className="tl-input bg-light-hover dark:bg-dark-hover text-gray-500 dark:text-gray-400 cursor-default font-mono text-sm">
+                          {amtExit} {amtExit !== '—' && <span className="text-xs text-gray-400">$</span>}
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
 
-                {/* Row 5 : VWAP / order type */}
+                {/* Row 4 : levier / VWAP */}
+                <EditableField label="Levier" hint="1 = sans levier" value={draft.leverage} type="number" onChange={v => set('leverage', v || 1)} suffix="×" />
                 <EditableField label="VWAP" value={(draft as any).vwap} type="number" onChange={v => set('vwap', v || undefined)} suffix="$" />
+
+                {/* Row 5 : dates */}
+                <EditableField label="Date d'entrée" value={draft.entry_time} type="datetime-local" onChange={v => set('entry_time', v || undefined)} />
+                <EditableField label="Date de sortie" hint="vide = ouvert" value={draft.exit_time} type="datetime-local" onChange={v => set('exit_time', v || undefined)} />
+
+                {/* Row 6 : type d'ordre seul */}
                 <EditableField label="Type d'ordre" value={(draft as any).order_type} type="select" options={ORDER_TYPES} onChange={v => set('order_type', v)} />
 
               </div>
