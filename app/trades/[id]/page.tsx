@@ -69,17 +69,19 @@ function StatPill({ label, value, className }: { label: string; value: React.Rea
 }
 
 // ── QtyAmountRow ─────────────────────────────────────────────────
-// Completely uncontrolled inputs. Uses a `resetKey` to re-mount
-// when the parent trade is reloaded after save (so new values show).
-// Within a session, never re-syncs from parent to avoid disrupting typing.
+// Uses truly UNCONTROLLED inputs (defaultValue + key) so React can
+// never interfere with what the user is typing. The inputs remount
+// only when resetKey changes (after a successful save).
 function fmtQty(v: string | number | undefined): string {
   if (v === undefined || v === null || v === '') return ''
   const n = parseFloat(String(v))
-  if (isNaN(n)) return ''
+  if (isNaN(n) || !isFinite(n)) return ''
+  if (Math.abs(n) < 1e-8 && n !== 0) return '0'
   return parseFloat(n.toFixed(8)).toString()
 }
 function fmtAmt(n: number): string {
   if (isNaN(n) || !isFinite(n)) return ''
+  if (Math.abs(n) < 0.001 && n !== 0) return '0'
   return parseFloat(n.toFixed(2)).toString()
 }
 
@@ -92,75 +94,64 @@ function QtyAmountRow({
   onAmountChange: (qty: string) => void
   resetKey: string | number
 }) {
+  const epN     = isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 0
   const initQty = fmtQty(quantity)
-  const epN = isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 0
   const initAmt = initQty && epN ? fmtAmt(parseFloat(initQty) * epN) : ''
 
-  // Local state — never overwritten by parent after mount
-  const [qty, setQty] = useState(initQty)
-  const [amt, setAmt] = useState(initAmt)
+  // Refs to read uncontrolled input values without touching state
+  const qtyRef = useRef<HTMLInputElement>(null)
+  const amtRef = useRef<HTMLInputElement>(null)
 
-  // Only reset when resetKey changes (i.e. after a successful save)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setQty(fmtQty(quantity))
-    const q = parseFloat(fmtQty(quantity))
-    setAmt(epN && !isNaN(q) ? fmtAmt(q * epN) : '')
-  // resetKey is the only real trigger — quantity/entryPrice strings
-  // might echo back and cause re-renders we want to ignore
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey])
-
-  const handleQtyBlur = (raw: string) => {
-    const n = parseFloat(raw)
-    const normalized = isNaN(n) ? raw : fmtQty(n)
-    setQty(normalized)
-    onQtyChange(normalized)
-    if (!isNaN(n) && epN) setAmt(fmtAmt(n * epN))
-  }
-
-  const handleAmountBlur = (raw: string) => {
-    const a = parseFloat(raw)
-    if (!isNaN(a) && epN > 0) {
-      const q = a / epN
-      const qStr = fmtQty(q)
-      setQty(qStr)
-      onAmountChange(qStr)
-      setAmt(fmtAmt(a))
+  const handleQtyBlur = () => {
+    const raw = qtyRef.current?.value ?? ''
+    const n   = parseFloat(raw)
+    if (!isNaN(n)) {
+      onQtyChange(fmtQty(n))
+      if (epN && amtRef.current) amtRef.current.value = fmtAmt(n * epN)
     }
   }
 
+  const handleAmountBlur = () => {
+    const raw = amtRef.current?.value ?? ''
+    const a   = parseFloat(raw)
+    if (!isNaN(a) && epN > 0) {
+      const qStr = fmtQty(a / epN)
+      onAmountChange(qStr)
+      if (qtyRef.current) qtyRef.current.value = qStr
+      if (amtRef.current) amtRef.current.value = fmtAmt(a)
+    }
+  }
+
+  // key={resetKey} forces a full remount of both inputs after save
   return (
     <>
       <div>
-        <label className="tl-label">Quantité <span className="text-gray-400 font-normal normal-case tracking-normal text-[10px]">(8 déc. max)</span></label>
+        <label className="tl-label">
+          Quantité
+          <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">(8 déc. max)</span>
+        </label>
         <input
+          key={`qty-${resetKey}`}
+          ref={qtyRef}
           className="tl-input w-full"
           type="text"
           inputMode="decimal"
-          value={qty}
-          onChange={e => setQty(e.target.value)}
-          onBlur={e => handleQtyBlur(e.target.value)}
+          defaultValue={initQty}
+          onBlur={handleQtyBlur}
         />
       </div>
       <div>
-        <label className="tl-label">
-          Montant
-          {epN > 0 && qty && !isNaN(parseFloat(qty)) && (
-            <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal text-[10px]">
-              — {epN.toLocaleString()} × {qty}
-            </span>
-          )}
-        </label>
+        <label className="tl-label">Montant</label>
         <div className="relative">
           <input
+            key={`amt-${resetKey}`}
+            ref={amtRef}
             className="tl-input w-full"
             type="text"
             inputMode="decimal"
-            value={amt}
+            defaultValue={initAmt}
             placeholder={epN ? 'auto depuis Quantité' : "Entrer le prix d'entrée d'abord"}
-            onChange={e => setAmt(e.target.value)}
-            onBlur={e => handleAmountBlur(e.target.value)}
+            onBlur={handleAmountBlur}
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">$</span>
         </div>
@@ -168,7 +159,6 @@ function QtyAmountRow({
     </>
   )
 }
-
 
 // Converts an ISO UTC string to a value usable in a datetime-local input (local time)
 function isoToLocalInput(iso: string | undefined): string {
