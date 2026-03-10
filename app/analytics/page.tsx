@@ -328,16 +328,16 @@ export default function AnalyticsPage() {
                   <YAxis yAxisId="cum"
                     tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
                     axisLine={false} tickLine={false} width={52}
-                    tickFormatter={v => `${v >= 0 ? '+' : ''}${v.toFixed(0)}`} />
+                    tickFormatter={v => `${v >= 0 ? '+' : ''}${Number(v).toFixed(0)}`} />
                   <YAxis yAxisId="daily" orientation="right"
                     tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
                     axisLine={false} tickLine={false} width={44}
                     domain={[-maxAbsDaily * 1.2, maxAbsDaily * 1.2]}
-                    tickFormatter={v => v.toFixed(0)} />
+                    tickFormatter={v => Number(v).toFixed(0)} />
                   <ReferenceLine yAxisId="cum" y={0} stroke={gridColor} strokeDasharray="4 4" />
                   <Tooltip
                     content={<ChartTooltip formatter={(v: number, name: string) =>
-                      name === 'P&L jour' ? formatPnL(v) : `${v >= 0 ? '+' : ''}${v.toFixed(2)}`
+                      name === 'P&L jour' ? formatPnL(v) : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2)}`
                     } />}
                   />
                   {/* Daily bars */}
@@ -381,7 +381,7 @@ export default function AnalyticsPage() {
                   <YAxis tickFormatter={v => `${v}%`}
                     tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
                     axisLine={false} tickLine={false} width={40} />
-                  <Tooltip content={<ChartTooltip formatter={(v: number) => `${v.toFixed(2)}%`} />} />
+                  <Tooltip content={<ChartTooltip formatter={(v: number) => `${Number(v).toFixed(2)}%`} />} />
                   <Area type="monotone" dataKey="drawdown_pct" name="Drawdown"
                     stroke="#ff3b5c" strokeWidth={1.5} fill="url(#ddGrad)" dot={false} />
                 </AreaChart>
@@ -450,7 +450,7 @@ export default function AnalyticsPage() {
                         axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
                         axisLine={false} tickLine={false} width={44}
-                        tickFormatter={v => `${v >= 0 ? '' : ''}${v.toFixed(0)}`} />
+                        tickFormatter={v => `${v >= 0 ? '' : ''}${Number(v).toFixed(0)}`} />
                       <Tooltip content={<ChartTooltip formatter={(v: number) => formatPnL(v)} />} />
                       <Bar dataKey="total_pnl" name="P&L" maxBarSize={20} radius={[2, 2, 0, 0]}>
                         {bySymbol.slice(0, 8).map((e, i) => (
@@ -506,7 +506,7 @@ export default function AnalyticsPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                       <XAxis type="number"
                         tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
-                        axisLine={false} tickLine={false} tickFormatter={v => `${v.toFixed(0)}`} />
+                        axisLine={false} tickLine={false} tickFormatter={v => `${Number(v).toFixed(0)}`} />
                       <YAxis type="category" dataKey="setup" width={70}
                         tick={{ fontSize: 8, fontFamily: 'monospace', fill: axisColor }}
                         axisLine={false} tickLine={false} />
@@ -561,7 +561,7 @@ export default function AnalyticsPage() {
                         axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 9, fontFamily: 'monospace', fill: axisColor }}
                         axisLine={false} tickLine={false} width={44}
-                        tickFormatter={v => v.toFixed(0)} />
+                        tickFormatter={v => Number(v).toFixed(0)} />
                       <Tooltip content={<ChartTooltip formatter={(v: number) => formatPnL(v)} />} />
                       <Bar dataKey="total_pnl" name="P&L" maxBarSize={36} radius={[3, 3, 0, 0]}>
                         {bySession.map((s, i) => (
@@ -695,7 +695,7 @@ export default function AnalyticsPage() {
                           'font-mono font-bold leading-none mt-0.5 hidden sm:block text-[8px]',
                           pos ? 'text-profit' : 'text-loss'
                         )}>
-                          {pnl! >= 0 ? '+' : ''}{pnl!.toFixed(0)}
+                          {pnl! >= 0 ? '+' : ''}{Number(pnl).toFixed(0)}
                         </span>
                       )}
                     </div>
