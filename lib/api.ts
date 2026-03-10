@@ -248,7 +248,7 @@ export const analytics = {
     return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number; wins: number; losses: number }> }>(`/analytics/calendar?${params}`)
   },
   bySymbol: (account_id?: string) =>
-    apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
+    apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; avg_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
   bySession: (account_id?: string) =>
     apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-session${account_id ? `?account_id=${account_id}` : ''}`),
   byMistakes: (account_id?: string) =>
