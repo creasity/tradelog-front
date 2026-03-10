@@ -34,18 +34,21 @@ const PERIODS = [
 // Micro components
 // ─────────────────────────────────────────────────────────────────────────────
 
-// KPI card — icon on top, compact
+// KPI card — icon left, text right, no truncation
 function Kpi({ label, value, sub, color = '#4f8ef7', icon }: {
   label: string; value: string; sub?: string; color?: string; icon: string
 }) {
   return (
-    <div className="card p-3 flex flex-col gap-1.5 hover:border-accent/30 transition-colors">
-      <div className="flex items-center justify-between">
-        <span className="text-lg leading-none">{icon}</span>
-        {sub && <span className="text-[9px] font-mono text-gray-500 text-right leading-tight max-w-[60%] truncate">{sub}</span>}
+    <div className="card px-3 py-2.5 flex items-center gap-2.5 hover:border-accent/30 transition-colors">
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
+        style={{ background: color + '18' }}>
+        {icon}
       </div>
-      <div className="font-mono font-bold text-sm leading-none truncate" style={{ color }}>{value}</div>
-      <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500 leading-none">{label}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500 leading-none mb-1 whitespace-nowrap">{label}</div>
+        <div className="font-mono font-bold text-sm leading-none" style={{ color }}>{value}</div>
+        {sub && <div className="text-[9px] font-mono text-gray-500 leading-tight mt-0.5 whitespace-nowrap">{sub}</div>}
+      </div>
     </div>
   )
 }
@@ -228,7 +231,7 @@ Sois direct, précis, bienveillant. Réponds en français.`
   if (loading && !ov) return (
     <AppLayout title="Analytics">
       <div className="space-y-4">
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {Array(8).fill(0).map((_,i) => <div key={i} className="skeleton h-20 rounded-xl" />)}
         </div>
         {[200, 180, 150].map((h,i) => <div key={i} className="skeleton rounded-xl" style={{ height: h }} />)}
@@ -261,9 +264,9 @@ Sois direct, précis, bienveillant. Réponds en français.`
 
       {/* ── KPI grid — icon on top, 4+4 cols ──────────────────────── */}
       {ov && (
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mb-4">
           <Kpi icon="💰" label="P&L Net"       value={formatPnL(ov.total_pnl)}
-            sub={`${toNum(ov.total_trades)} trades`} color={pnlColor} />
+            sub={`${toNum(ov.total_trades)}T`} color={pnlColor} />
           <Kpi icon="🎯" label="Win Rate"
             value={`${toNum(ov.win_rate).toFixed(1)}%`}
             sub={`${ov.winning_trades}W / ${ov.losing_trades}L`}
@@ -280,7 +283,7 @@ Sois direct, précis, bienveillant. Réponds en français.`
           <Kpi icon="💀" label="Worst Trade"   value={formatPnL(ov.worst_trade)}  color="#ff3b5c" />
           <Kpi icon="💸" label="Frais"
             value={formatPnL(ov.total_fees)}
-            sub={`${ov.total_trades > 0 ? (toNum(ov.total_fees) / toNum(ov.total_trades) * -1).toFixed(2) : '0'}$/trade`}
+            sub={`moy. ${ov.total_trades > 0 ? Number(toNum(ov.total_fees) / toNum(ov.total_trades) * -1).toFixed(2) : '0'}$`}
             color="#f59e0b" />
           <Kpi icon="⏱" label="Durée moy."
             value={formatDuration(ov.avg_duration_seconds)}
