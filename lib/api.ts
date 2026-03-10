@@ -258,7 +258,7 @@ export const analytics = {
   byWeekday: (account_id?: string) =>
     apiFetch<{ by_weekday: Array<{ day: string; dow: number; trades: number; total_pnl: number; avg_pnl: number; win_rate: number }> }>(`/analytics/by-weekday${account_id ? `?account_id=${account_id}` : ''}`),
   byHour: (account_id?: string) =>
-    apiFetch<{ by_hour: Array<{ hour: number; label: string; trades: number; total_pnl: number; avg_pnl: number; win_rate: number }> }>(`/analytics/by-hour${account_id ? `?account_id=${account_id}` : ''}`)
+    apiFetch<{ by_hour: Array<{ hour: number; label: string; trades: number; total_pnl: number; avg_pnl: number; win_rate: number }> }>(`/analytics/by-hour${account_id ? `?account_id=${account_id}` : ''}`),
   drawdown: (account_id?: string) =>
     apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`)
 }
