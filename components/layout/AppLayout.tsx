@@ -10,9 +10,10 @@ interface AppLayoutProps {
   children: React.ReactNode
   title: string
   subtitle?: string
+  headerSlot?: React.ReactNode
 }
 
-export default function AppLayout({ children, title, subtitle }: AppLayoutProps) {
+export default function AppLayout({ children, title, subtitle, headerSlot }: AppLayoutProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
 
@@ -36,9 +37,8 @@ export default function AppLayout({ children, title, subtitle }: AppLayoutProps)
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
       <Sidebar />
-      {/* Desktop: offset left by sidebar width. Mobile: offset top by topbar height */}
       <div className="md:ml-56 pt-14 md:pt-0 min-h-screen flex flex-col">
-        <Topbar title={title} subtitle={subtitle} />
+        <Topbar title={title} subtitle={subtitle} headerSlot={headerSlot} />
         <main className="flex-1 p-4 md:p-6">
           {children}
         </main>
