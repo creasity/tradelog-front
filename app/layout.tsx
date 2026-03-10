@@ -1,48 +1,43 @@
-'use client'
+import type { Metadata } from 'next'
+import './globals.css'
+import { ThemeProvider } from '@/contexts/ThemeContext'
+import { AuthProvider } from '@/contexts/AuthContext'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Sidebar from './Sidebar'
-import Topbar from './Topbar'
-import { useAuth } from '@/contexts/AuthContext'
-
-interface AppLayoutProps {
-  children: React.ReactNode
-  title: string
-  subtitle?: string
-  topbarContent?: React.ReactNode
+export const metadata: Metadata = {
+  title: 'TradeLog — Journal de Trading',
+  description: 'Journal de trading intelligent. Analysez vos performances, identifiez vos erreurs.',
+  icons: { icon: '/favicon.ico' },
 }
 
-export default function AppLayout({ children, title, subtitle, topbarContent }: AppLayoutProps) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/auth/login')
-  }, [loading, user, router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-mono text-gray-500 tracking-widest uppercase">Chargement...</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) return null
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
-      <Sidebar />
-      <div className="md:ml-56 pt-14 md:pt-0 min-h-screen flex flex-col">
-        <Topbar title={title} subtitle={subtitle} topbarContent={topbarContent} />
-        <main className="flex-1 p-4 md:p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <html lang="fr" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = localStorage.getItem('theme') || 
+                  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="font-body antialiased bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   )
 }
