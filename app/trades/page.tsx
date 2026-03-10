@@ -221,13 +221,13 @@ function TimelineSlider({
         ))}
         {/* Left handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-5 bg-accent rounded-sm cursor-ew-resize shadow z-10 hover:scale-110 transition-transform"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-4 bg-accent rounded-sm cursor-ew-resize shadow z-10 hover:scale-110 transition-transform"
           style={{ left: `${leftPos * 100}%` }}
           onMouseDown={e => { e.preventDefault(); dragRef.current = 'left' }}
         />
         {/* Right handle */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-5 bg-accent rounded-sm cursor-ew-resize shadow z-10 hover:scale-110 transition-transform"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-4 bg-accent rounded-sm cursor-ew-resize shadow z-10 hover:scale-110 transition-transform"
           style={{ left: `${rightPos * 100}%` }}
           onMouseDown={e => { e.preventDefault(); dragRef.current = 'right' }}
         />
@@ -252,7 +252,6 @@ type ColDef = {
   sortKey: string | null // null = not sortable
   clientSort?: (a: Trade, b: Trade, dir: 1 | -1) => number
 }
-
 const COLS: ColDef[] = [
   {
     id: 'date', label: 'Date', sortKey: 'entry_time',
@@ -266,17 +265,17 @@ const COLS: ColDef[] = [
     clientSort: (a, b, d) => d * tradeOutcome(a).localeCompare(tradeOutcome(b)) },
   { id: 'side', label: 'Side', sortKey: 'side',
     clientSort: (a, b, d) => d * a.side.localeCompare(b.side) },
-  { id: 'entry_price', label: 'Prix entrée', sortKey: 'entry_price',
+  { id: 'entry_price', label: 'Prix\nentrée', sortKey: 'entry_price',
     clientSort: (a, b, d) => d * (toNum(a.entry_price) - toNum(b.entry_price)) },
-  { id: 'exit_price', label: 'Prix sortie', sortKey: 'exit_price',
+  { id: 'exit_price', label: 'Prix\nsortie', sortKey: 'exit_price',
     clientSort: (a, b, d) => d * (toNum(a.exit_price) - toNum(b.exit_price)) },
-  { id: 'mnt_ent', label: 'Montant entrée', sortKey: 'mnt_ent',
+  { id: 'mnt_ent', label: 'Montant\nentrée', sortKey: 'mnt_ent',
     clientSort: (a, b, d) => d * (toNum(a.entry_price) * toNum(a.quantity) - toNum(b.entry_price) * toNum(b.quantity)) },
-  { id: 'mnt_sort', label: 'Montant sortie', sortKey: 'mnt_sort',
+  { id: 'mnt_sort', label: 'Montant\nsortie', sortKey: 'mnt_sort',
     clientSort: (a, b, d) => d * (toNum(a.exit_price) * toNum(a.quantity) - toNum(b.exit_price) * toNum(b.quantity)) },
   { id: 'duration', label: 'Durée', sortKey: 'duration',
     clientSort: (a, b, d) => d * (toNum(a.duration_seconds) - toNum(b.duration_seconds)) },
-  { id: 'net_pnl', label: 'Retour %', sortKey: 'net_pnl',
+  { id: 'net_pnl', label: 'Retour\n%', sortKey: 'net_pnl',
     clientSort: (a, b, d) => d * (toNum(a.net_pnl) - toNum(b.net_pnl)) },
   { id: 'attach', label: '', sortKey: null },
   { id: 'del',    label: '', sortKey: null },
@@ -455,13 +454,14 @@ export default function TradesPage() {
 
   // ── Header slot (presets + slider for desktop topbar) ──────────────────────
   const headerSlot = (
-    <div className="flex items-center gap-3 h-full py-1">
-      <div className="flex-shrink-0">
+    <div className="flex items-center gap-2 h-full py-1">
+      {/* Presets: flex-1, boutons étirés pour occuper la largeur */}
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-1">
           {PRESETS.slice(0, 5).map(p => (
             <button key={p.id} onClick={() => applyPreset(p.id)}
               className={cn(
-                'px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-all whitespace-nowrap',
+                'flex-1 px-1 py-0.5 rounded text-[10px] font-mono font-medium border transition-all text-center',
                 activePreset === p.id
                   ? 'bg-accent text-white border-accent'
                   : 'text-gray-500 dark:text-gray-400 border-light-border dark:border-dark-border hover:border-accent hover:text-accent'
@@ -472,19 +472,20 @@ export default function TradesPage() {
           {PRESETS.slice(5).map(p => (
             <button key={p.id} onClick={() => applyPreset(p.id)}
               className={cn(
-                'px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-all whitespace-nowrap',
+                'flex-1 px-1 py-0.5 rounded text-[10px] font-mono font-medium border transition-all text-center',
                 activePreset === p.id
                   ? 'bg-accent text-white border-accent'
                   : 'text-gray-500 dark:text-gray-400 border-light-border dark:border-dark-border hover:border-accent hover:text-accent'
               )}>{p.label}</button>
           ))}
           <button onClick={resetFilters}
-            className="px-2 py-0.5 rounded text-[10px] font-mono text-gray-400 border border-light-border dark:border-dark-border hover:text-loss hover:border-loss transition-all">
+            className="flex-1 px-1 py-0.5 rounded text-[10px] font-mono text-gray-400 border border-light-border dark:border-dark-border hover:text-loss hover:border-loss transition-all text-center">
             Reset
           </button>
         </div>
       </div>
-      <div className="flex-1 min-w-0">
+      {/* Timeline réduite à ~200px */}
+      <div className="flex-shrink-0 w-52">
         <TimelineSlider
           baseFrom={displayBaseRange.from} baseTo={displayBaseRange.to}
           tradeList={tradeList} leftPos={sliderL} rightPos={sliderR} onRange={handleSlider}
@@ -525,7 +526,7 @@ export default function TradesPage() {
           <div className="flex items-stretch gap-0 divide-x divide-light-border dark:divide-dark-border">
 
             {/* Equity chart */}
-            <div className="flex-shrink-0 w-36 h-20 p-2">
+            <div className="flex-shrink-0 w-64 h-20 p-2">
               {equityData.length > 1 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={equityData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
@@ -565,7 +566,7 @@ export default function TradesPage() {
 
             {/* PnL box */}
             <div className={cn(
-              'flex-shrink-0 w-32 flex flex-col items-center justify-center px-4 py-3',
+              'flex-shrink-0 w-44 flex flex-col items-center justify-center px-4 py-3',
               stats.netPnL >= 0 ? 'bg-[#00d17a]/5' : 'bg-[#ff3b5c]/5'
             )}>
               <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500 mb-1">P&L Net</div>
@@ -678,8 +679,15 @@ export default function TradesPage() {
                       )}
                       onClick={() => col.sortKey && handleSort(col)}
                     >
-                      <div className="flex items-center gap-1">
-                        {col.label}
+                      <div className="flex items-start gap-1">
+                        <span className="leading-tight">
+                          {col.label.includes('\n')
+                            ? col.label.split('\n').map((part, i) => (
+                                <span key={i} className="block">{part}</span>
+                              ))
+                            : col.label
+                          }
+                        </span>
                         <SortIcon col={col} />
                       </div>
                     </th>
