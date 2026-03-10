@@ -646,8 +646,6 @@ export default function TradesPage() {
         </div>
       )}
 
-      }
-
       {/* ── Search bar ──────────────────────────────────────────── */}
       <div className="flex items-center gap-2 mb-3">
         {/* Trade count */}
