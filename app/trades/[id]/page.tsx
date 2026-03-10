@@ -111,24 +111,6 @@ function EditableField({
   suffix?: string
   hint?: string
 }) {
-  // For numbers: normalize the external value to strip DB trailing zeros
-  const normalize = (v: string | number | undefined) =>
-    type === 'number' ? normalizeNum(v) : 
-    type === 'datetime-local' ? isoToLocalInput(v as string) : 
-    String(v ?? '')
-
-  const [localVal, setLocalVal] = useState<string>(normalize(value))
-  // Track whether the field is currently focused
-  const focused = useRef(false)
-
-  // Sync external value changes (e.g. after save) only when not focused
-  useEffect(() => {
-    if (!focused.current) {
-      setLocalVal(normalize(value))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
-
   if (type === 'select' && options) {
     return (
       <div>
@@ -156,28 +138,30 @@ function EditableField({
   }
 
   if (type === 'datetime-local') {
+    // For datetime: convert UTC→local for display, local→UTC on change
+    const localDisplay = isoToLocalInput(value as string)
     return (
       <div>
         <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
         <input
           className="tl-input w-full"
           type="datetime-local"
-          value={localVal}
-          onFocus={() => { focused.current = true }}
-          onChange={e => {
-            setLocalVal(e.target.value)
-            onChange(localInputToIso(e.target.value))
-          }}
-          onBlur={() => { focused.current = false }}
+          value={localDisplay}
+          onChange={e => onChange(localInputToIso(e.target.value))}
         />
       </div>
     )
   }
 
-  // text / number:
-  // - Use type="text" + inputMode to avoid browser's number-input quirks
-  //   (browser rejects "1." mid-typing, resets field on invalid intermediate values)
-  // - Only propagate to draft on blur so typing is never interrupted
+  // text / number: fully controlled, onChange on every keystroke.
+  // Draft stores raw string; parseFloat happens only in handleSave.
+  // No local state, no useEffect, no focused ref — nothing can reset the value.
+  // Show string values as-is (user is typing); only normalize DB decimals like "72000.00000000"
+  const displayVal = (() => {
+    if (value === undefined || value === null || value === '') return ''
+    if (typeof value === 'string' && !/\.0{2,}$/.test(value)) return value
+    return normalizeNum(value)
+  })()
   return (
     <div>
       <label className="tl-label">{label}{hint && <span className="ml-1 text-gray-400 font-normal normal-case tracking-normal">— {hint}</span>}</label>
@@ -186,13 +170,8 @@ function EditableField({
           className="tl-input w-full"
           type="text"
           inputMode={type === 'number' ? 'decimal' : 'text'}
-          value={localVal}
-          onFocus={() => { focused.current = true }}
-          onChange={e => setLocalVal(e.target.value)}
-          onBlur={e => {
-            focused.current = false
-            onChange(e.target.value)
-          }}
+          value={displayVal}
+          onChange={e => onChange(e.target.value)}
         />
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">{suffix}</span>
@@ -201,6 +180,7 @@ function EditableField({
     </div>
   )
 }
+
 function TagSelector({
   label, icon, selected, presets, color, onChange,
 }: {
