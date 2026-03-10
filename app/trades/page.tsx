@@ -136,18 +136,6 @@ function StatPill({
   )
 }
 
-// MiniStat — compact cell for mobile stats bar
-// ─────────────────────────────────────────────────────────────────────────────
-
-function MiniStat({ label, value, color }: { label: string; value: string | number; color: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-2 px-1">
-      <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 leading-none mb-1">{label}</span>
-      <span className="font-mono font-bold text-sm leading-none" style={{ color }}>{value}</span>
-    </div>
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // SideArrow
 // ─────────────────────────────────────────────────────────────────────────────
@@ -535,11 +523,10 @@ export default function TradesPage() {
       {/* ── Stats bar ───────────────────────────────────────────── */}
       {tradeList.length > 0 && (
         <div className="card mb-3 overflow-hidden">
+          <div className="flex items-stretch gap-0 divide-x divide-light-border dark:divide-dark-border">
 
-          {/* ── MOBILE layout (< md) ── */}
-          <div className="md:hidden">
-            {/* Equity curve — full width, h-14 (1/3 moins que h-20) */}
-            <div className="w-full h-14 px-2 pt-2">
+            {/* Equity chart */}
+            <div className="flex-shrink-0 w-64 h-20 p-2">
               {equityData.length > 1 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={equityData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
@@ -560,53 +547,6 @@ export default function TradesPage() {
                     />
                     <Area type="monotone" dataKey="v" stroke={pnlColor} strokeWidth={2}
                       fill="url(#ecg)" dot={false} animationDuration={800} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[10px] font-mono text-gray-500">—</div>
-              )}
-            </div>
-
-            {/* Stats 3 cols × 2 lignes + P&L */}
-            <div className="border-t border-light-border dark:border-dark-border">
-              <div className="grid grid-cols-3 divide-x divide-light-border dark:divide-dark-border">
-                <MiniStat label="Wins"   value={stats.wins}   color="#00d17a" />
-                <MiniStat label="Losses" value={stats.losses} color="#ff3b5c" />
-                <MiniStat label="Open"   value={stats.open}   color="#9ca3af" />
-              </div>
-              <div className="grid grid-cols-3 divide-x border-t border-light-border dark:border-dark-border divide-light-border dark:divide-dark-border">
-                <MiniStat label="Win rate" value={`${stats.wr.toFixed(0)}%`}                              color={stats.wr >= 50 ? '#00d17a' : '#f59e0b'} />
-                <MiniStat label="Avg W"    value={stats.avgW ? `$${Math.round(stats.avgW)}` : '—'}        color="#00d17a" />
-                <MiniStat label="P&L"      value={formatPnL(stats.netPnL)}                                color={pnlColor} />
-              </div>
-            </div>
-          </div>
-
-          {/* ── DESKTOP layout (≥ md) ── */}
-          <div className="hidden md:flex items-stretch gap-0 divide-x divide-light-border dark:divide-dark-border">
-
-            {/* Equity chart */}
-            <div className="flex-shrink-0 w-64 h-20 p-2">
-              {equityData.length > 1 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={equityData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-                    <defs>
-                      <linearGradient id="ecg-d" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={pnlColor} stopOpacity={0.35} />
-                        <stop offset="95%" stopColor={pnlColor} stopOpacity={0}    />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip
-                      content={({ active, payload }) =>
-                        active && payload?.[0] ? (
-                          <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-[10px] font-mono" style={{ color: pnlColor }}>
-                            {toNum(payload[0].value) >= 0 ? '+' : ''}{toNum(payload[0].value).toFixed(2)}
-                          </div>
-                        ) : null
-                      }
-                    />
-                    <Area type="monotone" dataKey="v" stroke={pnlColor} strokeWidth={2}
-                      fill="url(#ecg-d)" dot={false} animationDuration={800} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -642,11 +582,8 @@ export default function TradesPage() {
               </div>
             </div>
           </div>
-
         </div>
       )}
-
-      }
 
       {/* ── Search bar ──────────────────────────────────────────── */}
       <div className="flex items-center gap-2 mb-3">
