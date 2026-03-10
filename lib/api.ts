@@ -252,6 +252,8 @@ export const analytics = {
     apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-session${account_id ? `?account_id=${account_id}` : ''}`),
   byMistakes: (account_id?: string) =>
     apiFetch<{ by_mistakes: Array<{ mistake: string; occurrences: number; total_pnl_impact: number }> }>(`/analytics/by-mistakes${account_id ? `?account_id=${account_id}` : ''}`),
+  bySetup: (account_id?: string) =>
+    apiFetch<{ by_setup: Array<{ setup: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-setup${account_id ? `?account_id=${account_id}` : ''}`),
   drawdown: (account_id?: string) =>
-    apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`),
+    apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`)
 }
