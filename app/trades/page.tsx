@@ -485,7 +485,7 @@ export default function TradesPage() {
         </div>
       </div>
       {/* Timeline réduite à ~200px */}
-      <div className="flex-shrink-0 w-52">
+      <div className="flex-shrink-0 w-[520px]">
         <TimelineSlider
           baseFrom={displayBaseRange.from} baseTo={displayBaseRange.to}
           tradeList={tradeList} leftPos={sliderL} rightPos={sliderR} onRange={handleSlider}
