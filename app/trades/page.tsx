@@ -405,7 +405,61 @@ export default function TradesPage() {
   ]
 
   return (
-    <AppLayout title="Trades" subtitle={`${pagination.total} trades`}>
+    <AppLayout
+      title="Trades"
+      subtitle={`${pagination.total} trades`}
+      headerSlot={
+        <div className="flex items-center gap-3 h-full">
+          {/* Presets: 2 rows */}
+          <div className="flex-shrink-0">
+            <div className="flex items-center gap-1 mb-1">
+              {PRESETS.slice(0, 5).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-all border whitespace-nowrap',
+                    activePreset === p.id
+                      ? 'bg-accent text-white border-accent'
+                      : 'text-gray-500 dark:text-gray-400 border-light-border dark:border-dark-border hover:border-accent hover:text-accent'
+                  )}
+                >{p.label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              {PRESETS.slice(5).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-all border whitespace-nowrap',
+                    activePreset === p.id
+                      ? 'bg-accent text-white border-accent'
+                      : 'text-gray-500 dark:text-gray-400 border-light-border dark:border-dark-border hover:border-accent hover:text-accent'
+                  )}
+                >{p.label}</button>
+              ))}
+              <button
+                onClick={resetFilters}
+                className="px-2 py-0.5 rounded text-[10px] font-mono text-gray-400 border border-light-border dark:border-dark-border hover:text-loss hover:border-loss transition-all"
+              >Reset</button>
+            </div>
+          </div>
+
+          {/* Timeline slider */}
+          <div className="flex-1 min-w-0">
+            <TimelineSlider
+              baseFrom={displayBaseRange.from}
+              baseTo={displayBaseRange.to}
+              tradeList={tradeList}
+              leftPos={sliderL}
+              rightPos={sliderR}
+              onRange={handleSlider}
+            />
+          </div>
+        </div>
+      }
+    >
 
       {/* ── Top bar ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 mb-3">
@@ -433,9 +487,8 @@ export default function TradesPage() {
         </Link>
       </div>
 
-      {/* ── Presets + Timeline ──────────────────────────────────── */}
-      <div className="card p-3 mb-3">
-        {/* Preset buttons */}
+      {/* ── Presets + Timeline (mobile only — desktop is in topbar) ── */}
+      <div className="md:hidden card p-3 mb-3">
         <div className="flex items-center gap-1 flex-wrap mb-3">
           {PRESETS.map(p => (
             <button
@@ -454,8 +507,6 @@ export default function TradesPage() {
             className="px-2 py-1 rounded text-[11px] font-mono text-gray-400 border border-light-border dark:border-dark-border hover:text-loss hover:border-loss transition-all"
           >Reset</button>
         </div>
-
-        {/* Timeline */}
         <TimelineSlider
           baseFrom={displayBaseRange.from}
           baseTo={displayBaseRange.to}
