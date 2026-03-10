@@ -245,7 +245,7 @@ export const analytics = {
   calendar: (year: number, month: number, account_id?: string) => {
     const params = new URLSearchParams({ year: String(year), month: String(month) })
     if (account_id) params.set('account_id', account_id)
-    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number }> }>(`/analytics/calendar?${params}`)
+    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number; wins: number; losses: number }> }>(`/analytics/calendar?${params}`)
   },
   bySymbol: (account_id?: string) =>
     apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
