@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
-import { analytics, accounts, Account } from '@/lib/api'
+import { analytics, accounts, Account, Analytics } from '@/lib/api'
 import { formatPnL, formatDuration, getPnLColor, cn, toNum } from '@/lib/utils'
 import {
   AreaChart, Area, BarChart, Bar, ComposedChart, Line,
@@ -15,13 +15,7 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Trophy, AlertTrian
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface Overview {
-  total_trades: number; open_trades: number
-  winning_trades: number; losing_trades: number; breakeven_trades: number
-  total_pnl: number; avg_pnl: number; best_trade: number; worst_trade: number
-  total_fees: number; avg_r: number; win_rate: number; profit_factor: number
-  avg_duration_seconds: number
-}
+type Overview = Analytics
 interface EquityPoint  { date: string; daily_pnl: number; cumulative_pnl: number; trades_count: number; wins: number; losses: number }
 interface SymbolStat   { symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }
 interface SetupStat    { setup: string;  trades: number; total_pnl: number; win_rate: number }
