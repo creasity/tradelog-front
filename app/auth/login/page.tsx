@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/api'
@@ -15,7 +15,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (auth.isAuthenticated()) {
+      window.location.href = '/dashboard'
+    } else {
+      setChecking(false)
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,13 +33,20 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await auth.login(email, password)
-      // window.location force un rechargement complet pour que le contexte Auth soit relu
-      window.location.href = '/dashboard' 
+      window.location.href = '/dashboard'
     } catch (err: any) {
       setError(err.message || 'Identifiants incorrects')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -91,7 +108,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="tl-label">Mot de passe</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="tl-label mb-0">Mot de passe</label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-[11px] font-mono text-accent hover:underline"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   className="tl-input pr-10"
