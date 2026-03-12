@@ -9,7 +9,7 @@ import {
 import {
   Users, TrendingUp, Zap, Activity, ShieldCheck,
   ChevronUp, ChevronDown, Search, RefreshCw,
-  UserCheck, UserX, BarChart2, Euro, ArrowUpRight,
+  UserCheck, UserX, BarChart2, DollarSign, ArrowUpRight,
   MoreHorizontal, LogOut, Ban, CheckCircle
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
@@ -205,7 +205,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
           <KpiCard icon={Users}      label="Users total"  value={loadingStats ? '…' : fmt(stats?.users?.total || 0)}
             sub={`${stats?.users?.active || 0} actifs`} delta={{ value: stats?.users?.new_7d || 0, label: 'cette sem.' }} />
-          <KpiCard icon={Euro}       label="MRR"          value={loadingStats ? '…' : fmtEur(stats?.revenue?.mrr || 0)}
+          <KpiCard icon={DollarSign}       label="MRR"          value={loadingStats ? '…' : fmtEur(stats?.revenue?.mrr || 0)}
             sub={`ARR ${fmtEur(stats?.revenue?.arr || 0)}`} />
           <KpiCard icon={TrendingUp} label="Pro"          value={loadingStats ? '…' : fmt(stats?.users?.pro || 0)}
             sub={`${fmtEur((stats?.users?.pro || 0) * 15)}/mois`} />
