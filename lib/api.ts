@@ -23,6 +23,7 @@ export interface User {
   first_name?: string
   last_name?: string
   plan: 'free' | 'pro' | 'algo'
+  is_admin?: boolean
   trades_this_month?: number
   ai_queries_this_month?: number
 }
@@ -89,7 +90,6 @@ export interface Analytics {
   open_trades: number
   winning_trades: number
   losing_trades: number
-  breakeven_trades: number
   total_pnl: number
   avg_pnl: number
   best_trade: number
@@ -199,18 +199,6 @@ export const auth = {
   isAuthenticated() {
     return !!storage.get('access_token')
   },
-
-  forgotPassword: (email: string) =>
-    apiFetch<{ message: string }>('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    }),
-
-  resetPassword: (token: string, password: string) =>
-    apiFetch<{ message: string }>('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password }),
-    }),
 }
 
 // ── Accounts ──────────────────────────────────────────────────────
@@ -257,20 +245,14 @@ export const analytics = {
   calendar: (year: number, month: number, account_id?: string) => {
     const params = new URLSearchParams({ year: String(year), month: String(month) })
     if (account_id) params.set('account_id', account_id)
-    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number; wins: number; losses: number }> }>(`/analytics/calendar?${params}`)
+    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number }> }>(`/analytics/calendar?${params}`)
   },
   bySymbol: (account_id?: string) =>
-    apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; avg_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
+    apiFetch<{ by_symbol: Array<{ symbol: string; trades: number; total_pnl: number; win_rate: number; avg_r: number }> }>(`/analytics/by-symbol${account_id ? `?account_id=${account_id}` : ''}`),
   bySession: (account_id?: string) =>
     apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-session${account_id ? `?account_id=${account_id}` : ''}`),
   byMistakes: (account_id?: string) =>
     apiFetch<{ by_mistakes: Array<{ mistake: string; occurrences: number; total_pnl_impact: number }> }>(`/analytics/by-mistakes${account_id ? `?account_id=${account_id}` : ''}`),
-  bySetup: (account_id?: string) =>
-    apiFetch<{ by_setup: Array<{ setup: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-setup${account_id ? `?account_id=${account_id}` : ''}`),
-  byWeekday: (account_id?: string) =>
-    apiFetch<{ by_weekday: Array<{ day: string; dow: number; trades: number; total_pnl: number; avg_pnl: number; win_rate: number }> }>(`/analytics/by-weekday${account_id ? `?account_id=${account_id}` : ''}`),
-  byHour: (account_id?: string) =>
-    apiFetch<{ by_hour: Array<{ hour: number; label: string; trades: number; total_pnl: number; avg_pnl: number; win_rate: number }> }>(`/analytics/by-hour${account_id ? `?account_id=${account_id}` : ''}`),
   drawdown: (account_id?: string) =>
-    apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`)
+    apiFetch<{ drawdown: Array<{ date: string; cumulative_pnl: number; drawdown_pct: number }>; max_drawdown_pct: number }>(`/analytics/drawdown${account_id ? `?account_id=${account_id}` : ''}`),
 }
