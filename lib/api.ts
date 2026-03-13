@@ -90,6 +90,7 @@ export interface Analytics {
   open_trades: number
   winning_trades: number
   losing_trades: number
+  breakeven_trades: number
   total_pnl: number
   avg_pnl: number
   best_trade: number
