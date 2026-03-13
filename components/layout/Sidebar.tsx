@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, TrendingUp, BarChart3,
-  PlusCircle, Settings, LogOut, Zap, Menu, X, Sun, Moon, Upload, Wallet
+  PlusCircle, Settings, LogOut, Zap, Menu, X, Sun, Moon, Upload, Wallet, ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -83,6 +83,26 @@ function NavContent({ onClose }: { onClose?: () => void }) {
             </Link>
           )
         })}
+
+        {/* Admin — visible uniquement pour les admins */}
+        {user?.is_admin && (
+          <Link
+            href="/admin"
+            onClick={onClose}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body font-medium transition-all group mt-2 border-t border-light-border dark:border-dark-border pt-2',
+              pathname.startsWith('/admin')
+                ? 'bg-accent/10 text-accent'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-light-hover dark:hover:bg-dark-hover'
+            )}
+          >
+            <ShieldCheck size={16} className={cn(
+              'flex-shrink-0',
+              pathname.startsWith('/admin') ? 'text-accent' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+            )} />
+            Admin
+          </Link>
+        )}
       </nav>
 
       <div className="px-3 pb-5 border-t border-light-border dark:border-dark-border pt-3 space-y-1">
