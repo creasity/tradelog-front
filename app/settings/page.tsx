@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { Check, Zap, Lock, Bell, User } from 'lucide-react'
+import TwoFactorSection from '@/components/TwoFactorSection'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ function ComingSoonBadge() {
 // ── Main page ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [flash] = useState('')
 
   const plan = user ? PLAN_INFO[user.plan as keyof typeof PLAN_INFO] ?? PLAN_INFO.free : PLAN_INFO.free
@@ -150,27 +151,14 @@ export default function SettingsPage() {
 
         {/* ── Sécurité ─────────────────────────────────────────── */}
         <div className="card p-5">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-4">
             <Lock size={13} className="text-accent" />
             <SectionTitle>Sécurité</SectionTitle>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 mb-4">
             {[
-              {
-                title: 'Mot de passe',
-                desc:  'Modifier votre mot de passe de connexion',
-                label: 'Modifier',
-              },
-              {
-                title: 'Double authentification',
-                desc:  'Sécurisez votre compte avec un code OTP',
-                label: 'Activer',
-              },
-              {
-                title: 'Sessions actives',
-                desc:  'Gérer les appareils connectés',
-                label: 'Voir',
-              },
+              { title: 'Mot de passe',    desc: 'Modifier votre mot de passe de connexion', label: 'Modifier' },
+              { title: 'Sessions actives', desc: 'Gérer les appareils connectés',            label: 'Voir'     },
             ].map(({ title, desc, label }) => (
               <div key={title} className="flex items-center justify-between py-2.5 border-b border-light-border dark:border-dark-border last:border-0">
                 <div>
@@ -184,6 +172,12 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
+
+        {/* ── Double authentification ──────────────────────────── */}
+        <TwoFactorSection
+          totpEnabled={user?.totp_enabled ?? false}
+          onStatusChange={() => refreshUser()}
+        />
 
         {/* ── Notifications ────────────────────────────────────── */}
         <div className="card p-5">

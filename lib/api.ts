@@ -24,6 +24,7 @@ export interface User {
   last_name?: string
   plan: 'free' | 'pro' | 'algo'
   is_admin?: boolean
+  totp_enabled?: boolean
   trades_this_month?: number
   ai_queries_this_month?: number
 }
@@ -90,7 +91,6 @@ export interface Analytics {
   open_trades: number
   winning_trades: number
   losing_trades: number
-  breakeven_trades: number
   total_pnl: number
   avg_pnl: number
   best_trade: number
@@ -161,13 +161,15 @@ async function tryRefreshToken(): Promise<boolean> {
 // ── Auth ──────────────────────────────────────────────────────────
 export const auth = {
   async login(email: string, password: string) {
-    const data = await apiFetch<{ user: User; access_token: string; refresh_token: string }>(
-      '/auth/login',
-      { method: 'POST', body: JSON.stringify({ email, password }) }
-    )
-    storage.set('access_token', data.access_token)
-    storage.set('refresh_token', data.refresh_token)
-    return data
+    const data = await apiFetch<
+      { user: User; access_token: string; refresh_token: string } |
+      { totp_required: true; pending_token: string }
+    >('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
+    if ('totp_required' in data && data.totp_required) return data
+    const d = data as { user: User; access_token: string; refresh_token: string }
+    storage.set('access_token', d.access_token)
+    storage.set('refresh_token', d.refresh_token)
+    return d
   },
 
   async register(email: string, password: string, first_name?: string, last_name?: string) {
@@ -243,8 +245,11 @@ export const analytics = {
   },
   equityCurve: (account_id?: string) =>
     apiFetch<{ equity_curve: EquityPoint[] }>(`/analytics/equity-curve${account_id ? `?account_id=${account_id}` : ''}`),
-  calendar: (year: number, month: number, account_id?: string) =>
-    apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number; wins: number; losses: number }> }>(`/analytics/calendar?year=${year}&month=${month}${account_id ? `&account_id=${account_id}` : ''}`),
+  calendar: (year: number, month: number, account_id?: string) => {
+    const params = new URLSearchParams({ year: String(year), month: String(month) })
+    if (account_id) params.set('account_id', account_id)
+    return apiFetch<{ calendar: Array<{ date: string; pnl: number; trades_count: number }> }>(`/analytics/calendar?${params}`)
+  },
   bySetup: (account_id?: string) =>
     apiFetch<{ by_setup: Array<{ setup: string; trades: number; total_pnl: number; win_rate: number; avg_pnl: number }> }>(`/analytics/by-setup${account_id ? `?account_id=${account_id}` : ''}`),
   bySymbol: (account_id?: string) =>
@@ -252,7 +257,7 @@ export const analytics = {
   byWeekday: (account_id?: string) =>
     apiFetch<{ by_weekday: Array<{ day: string; dow: number; total_pnl: number; avg_pnl: number; trades: number; win_rate: number }> }>(`/analytics/by-weekday${account_id ? `?account_id=${account_id}` : ''}`),
   byHour: (account_id?: string) =>
-  apiFetch<{ by_hour: Array<{ hour: number; label: string; total_pnl: number; avg_pnl: number; trades: number; win_rate: number }> }>(`/analytics/by-hour${account_id ? `?account_id=${account_id}` : ''}`),
+    apiFetch<{ by_hour: Array<{ hour: number; total_pnl: number; trades: number }> }>(`/analytics/by-hour${account_id ? `?account_id=${account_id}` : ''}`),
   bySession: (account_id?: string) =>
     apiFetch<{ by_session: Array<{ session: string; trades: number; total_pnl: number; win_rate: number }> }>(`/analytics/by-session${account_id ? `?account_id=${account_id}` : ''}`),
   byMistakes: (account_id?: string) =>
