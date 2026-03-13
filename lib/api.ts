@@ -24,6 +24,7 @@ export interface User {
   last_name?: string
   plan: 'free' | 'pro' | 'algo'
   is_admin?: boolean
+  totp_enabled?: boolean
   trades_this_month?: number
   ai_queries_this_month?: number
 }
