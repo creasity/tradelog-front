@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import TradeAIAnalysis from '@/components/TradeAIAnalysis'
 import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account } from '@/lib/api'
 import { cn, formatPnL, formatDate, formatDuration, getPnLColor, toNum } from '@/lib/utils'
@@ -283,7 +284,7 @@ export default function TradeDetailPage() {
   const [dirty,    setDirty]    = useState(false)
   const [saved,    setSaved]    = useState(false)
   const [screenshots, setScreenshots] = useState<string[]>([]) // base64
-  const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'media'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'media' | 'ai'>('overview')
 
   useEffect(() => {
     const load = async () => {
@@ -585,6 +586,7 @@ export default function TradeDetailPage() {
             { key: 'overview', label: '📊 Données' },
             { key: 'journal',  label: '📝 Journal' },
             { key: 'media',    label: `🖼 Charts (${screenshots.length})` },
+            { key: 'ai',       label: '🤖 Analyse IA' },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -865,27 +867,19 @@ export default function TradeDetailPage() {
               />
             </div>
 
-            {/* AI Score */}
-            {trade.ai_score !== undefined && trade.ai_score !== null && (
-              <div className="card p-5 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
-                  <Zap size={18} className="text-accent" />
-                </div>
-                <div>
-                  <div className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-1">Score IA</div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl font-mono font-bold text-accent">{(toNum(trade.ai_score) * 100).toFixed(0)}</div>
-                    <div className="w-32 h-2 bg-light-hover dark:bg-dark-hover rounded-full overflow-hidden">
-                      <div
-                        className={cn('h-full rounded-full', toNum(trade.ai_score) >= 0.7 ? 'bg-profit' : toNum(trade.ai_score) >= 0.4 ? 'bg-yellow-500' : 'bg-loss')}
-                        style={{ width: `${toNum(trade.ai_score) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
+        )}
+
+        {/* ── Tab: Analyse IA ─────────────────────────────────── */}
+        {activeTab === 'ai' && (
+          <TradeAIAnalysis
+            tradeId={trade.id}
+            isClosed={trade.status === 'closed'}
+            plan={user?.plan || 'free'}
+            existingAnalysis={trade.ai_analysis as any}
+            existingScore={trade.ai_score != null ? toNum(trade.ai_score) : null}
+            analyzedAt={trade.ai_analyzed_at as any}
+          />
         )}
 
         {/* ── Tab: Media (Screenshots) ────────────────────────── */}
