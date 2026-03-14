@@ -6,9 +6,10 @@ import { trades, accounts, Trade, Account, TradeFilters } from '@/lib/api'
 import { formatPnL, formatDate, formatDuration, getPnLColor, cn, toNum } from '@/lib/utils'
 import {
   Search, Plus, ChevronLeft, ChevronRight, Trash2, X,
-  CheckSquare, Square, FileImage, ChevronUp, ChevronDown, ChevronsUpDown,
+  CheckSquare, Square, FileImage, ChevronUp, ChevronDown, ChevronsUpDown, FileDown,
 } from 'lucide-react'
 import Link from 'next/link'
+import ExportPDFButton from '@/components/ExportPDFButton'
 import { useRouter } from 'next/navigation'
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
 
@@ -676,6 +677,10 @@ export default function TradesPage() {
           <option value="short">Short</option>
         </select>
 
+        <ExportPDFButton
+          accounts={accountList}
+          activeAccountId={filters.account_id}
+        />
         <Link href="/trades/new"
           className="btn-primary flex items-center gap-1.5 !px-3 !py-2 flex-shrink-0 !text-xs">
           <Plus size={13} /><span className="hidden sm:inline">Nouveau</span>
