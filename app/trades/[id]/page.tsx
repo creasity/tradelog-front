@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import TradeAIAnalysis from '@/components/TradeAIAnalysis'
+import { useAuth } from '@/contexts/AuthContext'
 import AppLayout from '@/components/layout/AppLayout'
 import { trades, accounts, Trade, Account } from '@/lib/api'
 import { cn, formatPnL, formatDate, formatDuration, getPnLColor, toNum } from '@/lib/utils'
@@ -272,6 +273,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 export default function TradeDetailPage() {
   const params  = useParams()
   const router  = useRouter()
+  const { user } = useAuth()
   const id      = params.id as string
   const fileRef = useRef<HTMLInputElement>(null)
 
