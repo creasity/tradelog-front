@@ -69,9 +69,6 @@ export interface Trade {
   net_pnl?: number
   pnl_percent?: number
   r_multiple?: number
-  ai_analysis?: any
-  ai_score?: number
-  ai_analyzed_at?: string
   stop_loss?: number
   take_profit?: number
   setup_tags?: string[]
@@ -85,7 +82,9 @@ export interface Trade {
   status: 'open' | 'closed' | 'cancelled'
   timeframe?: string
   session?: string
+  ai_analysis?: any
   ai_score?: number
+  ai_analyzed_at?: string
   created_at: string
 }
 
